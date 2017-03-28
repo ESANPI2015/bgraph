@@ -3,115 +3,132 @@
 namespace Software {
 
 Graph::Graph(const std::string& label)
-: Hyperedge(label)
+: Set(label)
 {
-    Hyperedge *algorithms = Hyperedge::create("Algorithms");
-    Hyperedge *interfaces = Hyperedge::create("Interfaces");
-    Hyperedge *inputs = Hyperedge::create("Inputs");
-    Hyperedge *outputs = Hyperedge::create("Outputs");
-    Hyperedge *parameters = Hyperedge::create("Parameters");
-    Hyperedge *types = Hyperedge::create("Types");
-    contains(algorithms);
-    contains(interfaces);
-    contains(inputs);
-    interfaces->contains(inputs);
-    contains(outputs);
-    interfaces->contains(outputs);
-    contains(parameters);
-    interfaces->contains(parameters);
-    contains(types);
+    Set *algorithm = Set::create("Algorithm");
+    Set *interface = Set::create("Interface");
+    Set *input = Set::create("Input");
+    Set *output = Set::create("Output");
+    Set *type = Set::create("Type");
+    algorithm->memberOf(this);
+    interface->memberOf(this);
+    input->memberOf(this);
+    input->isA(interface);
+    output->memberOf(this);
+    output->isA(interface);
+    type->memberOf(this);
     // Register Ids for easier access
-    _algId = algorithms->id();
-    _ifId = interfaces->id();
-    _inpId = inputs->id();
-    _outpId = outputs->id();
-    _paramId = parameters->id();
-    _typeId = types->id();
+    _algId = algorithm->id();
+    _ifId = interface->id();
+    _inpId = input->id();
+    _outpId = output->id();
+    _typeId = type->id();
 }
 
-Hyperedge* Graph::algorithms()
+Set* Graph::algorithms()
 {
-    return members()[_algId];
+    return algorithm()->subclasses();
 }
 
-Hyperedge* Graph::interfaces()
+Set* Graph::interfaces()
 {
-    return members()[_ifId];
+    return interface()->subclasses();
 }
 
-Hyperedge* Graph::inputs()
+Set* Graph::inputs()
 {
-    return members()[_inpId];
+    return input()->subclasses();
 }
 
-Hyperedge* Graph::outputs()
+Set* Graph::outputs()
 {
-    return members()[_outpId];
+    return output()->subclasses();
 }
 
-Hyperedge* Graph::parameters()
+Set* Graph::types()
 {
-    return members()[_paramId];
+    return type()->subclasses();
 }
 
-Hyperedge* Graph::types()
+Set* Graph::algorithm()
 {
-    return members()[_typeId];
+    return Set::promote(_created[_algId]);
 }
 
-Hyperedge* Graph::createAlgorithm(const std::string& name)
+Set* Graph::interface()
 {
-    Hyperedge *newbie = (Hyperedge::create(name));
-    algorithms()->contains(newbie);
+    return Set::promote(_created[_ifId]);
+}
+
+Set* Graph::input()
+{
+    return Set::promote(_created[_inpId]);
+}
+
+Set* Graph::output()
+{
+    return Set::promote(_created[_outpId]);
+}
+
+Set* Graph::type()
+{
+    return Set::promote(_created[_typeId]);
+}
+
+Set* Graph::createAlgorithm(const std::string& name)
+{
+    Set *newbie = (Set::create(name));
+    newbie->isA(algorithm());
     return newbie;
 }
 
-Hyperedge* Graph::createInput(const std::string& name)
+Set* Graph::createInput(const std::string& name)
 {
-    Hyperedge *newbie = (Hyperedge::create(name));
-    //interfaces()->contains(newbie);
-    inputs()->contains(newbie);
+    Set *newbie = (Set::create(name));
+    newbie->isA(input());
     return newbie;
 }
 
-Hyperedge* Graph::createOutput(const std::string& name)
+Set* Graph::createOutput(const std::string& name)
 {
-    Hyperedge *newbie = (Hyperedge::create(name));
-    //interfaces()->contains(newbie);
-    outputs()->contains(newbie);
+    Set *newbie = (Set::create(name));
+    newbie->isA(output());
     return newbie;
 }
 
-Hyperedge* Graph::createParameter(const std::string& name)
+Set* Graph::createType(const std::string& name)
 {
-    Hyperedge *newbie = (Hyperedge::create(name));
-    //interfaces()->contains(newbie);
-    parameters()->contains(newbie);
+    Set *newbie = (Set::create(name));
+    newbie->isA(type());
     return newbie;
 }
 
-Hyperedge* Graph::createType(const std::string& name)
+bool Graph::has(Set* algorithm, Set* interface)
 {
-    Hyperedge *newbie = (Hyperedge::create(name));
-    types()->contains(newbie);
-    return newbie;
-}
+    bool result = true;
 
-bool Graph::has(Hyperedge* algorithm, Hyperedge* interface)
-{
     // At first, we have to add algorithm & interface to the corresponding sets
-    algorithms()->contains(algorithm);
-    interfaces()->contains(interface);
+    result &= algorithm->isA(this->algorithm());
+    result &= interface->isA(this->interface());
 
-    // Finally we create a new relation (1-to-1)
-    Hyperedge *has = (Hyperedge::create("has"));
-    has->contains(algorithm);
-    has->contains(interface);
-    contains(has);
+    // Find a has relation in algorithm
+    auto edges = algorithm->pointingTo("has");
+    Relation *has = NULL;
+    if (edges.size())
+    {
+        has = static_cast< Relation *>(edges.begin()->second);
+        result &= has->to(interface);
+    } else {
+        // Finally we create a new relation (1-to-1)
+        has = (Relation::create("has"));
+        result &= has->from(algorithm);
+        result &= has->to(interface);
+    }
+
     return true;
 }
 
-bool Graph::has(Hyperedge* algorithm, Hyperedge::Hyperedges interfaces)
+bool Graph::has(Set* algorithm, Set::Sets interfaces)
 {
     // 1-N relation based on 2-hyperedges (1-1 relations)
     for (auto interfaceIt : interfaces)
@@ -122,7 +139,7 @@ bool Graph::has(Hyperedge* algorithm, Hyperedge::Hyperedges interfaces)
     return true;
 }
 
-bool Graph::has(Hyperedge::Hyperedges algorithms, Hyperedge* interface)
+bool Graph::has(Set::Sets algorithms, Set* interface)
 {
     // N-1 relation based on 2-hyperedges
     for (auto algorithmIt : algorithms)
@@ -133,7 +150,7 @@ bool Graph::has(Hyperedge::Hyperedges algorithms, Hyperedge* interface)
     return true;
 }
 
-bool Graph::has(Hyperedge::Hyperedges algorithms, Hyperedge::Hyperedges interfaces)
+bool Graph::has(Set::Sets algorithms, Set::Sets interfaces)
 {
     // N-M relation based on N * (1-M) relations
     for (auto algorithmIt : algorithms)
@@ -144,21 +161,32 @@ bool Graph::has(Hyperedge::Hyperedges algorithms, Hyperedge::Hyperedges interfac
     return true;
 }
 
-bool Graph::depends(Hyperedge* input, Hyperedge* output)
+bool Graph::depends(Set* input, Set* output)
 {
-    // At first, we have to add input & output to the corresponding sets
-    inputs()->contains(input);
-    outputs()->contains(output);
+    bool result = true;
 
-    // Finally we create a new relation (1-to-1)
-    Hyperedge *depends = (Hyperedge::create("depends"));
-    depends->contains(input);
-    depends->contains(output);
-    contains(depends);
+    // At first, we have to add input & output to the corresponding sets
+    result &= input->isA(this->input());
+    result &= output->isA(this->output());
+
+    // Find a depends relation in input
+    auto edges = input->pointingTo("depends");
+    Relation *depends = NULL;
+    if (edges.size())
+    {
+        depends = static_cast< Relation *>(edges.begin()->second);
+        result &= depends->to(output);
+    } else {
+        // Finally we create a new relation (1-to-1)
+        depends = (Relation::create("depends"));
+        result &= depends->from(input);
+        result &= depends->to(output);
+    }
+
     return true;
 }
 
-bool Graph::depends(Hyperedge::Hyperedges inputs, Hyperedge* output)
+bool Graph::depends(Set::Sets inputs, Set* output)
 {
     // N-1 relation based on 2-hyperedges (1-1 relations)
     for (auto inputIt : inputs)
@@ -169,21 +197,32 @@ bool Graph::depends(Hyperedge::Hyperedges inputs, Hyperedge* output)
     return true;
 }
 
-bool Graph::provides(Hyperedge* output, Hyperedge* type)
+bool Graph::provides(Set* output, Set* type)
 {
-    // At first, we have to add output & type to the corresponding sets
-    outputs()->contains(output);
-    types()->contains(type);
+    bool result = true;
 
-    // Finally we create a new relation (1-to-1)
-    Hyperedge *provides = (Hyperedge::create("provides"));
-    provides->contains(output);
-    provides->contains(type);
-    contains(provides);
+    // At first, we have to add output & type to the corresponding sets
+    result &= output->isA(this->output());
+    result &= type->isA(this->type());
+
+    // Find a provides relation in output
+    auto edges = output->pointingTo("provides");
+    Relation *provides = NULL;
+    if (edges.size())
+    {
+        provides = static_cast< Relation *>(edges.begin()->second);
+        result &= provides->to(type);
+    } else {
+        // Finally we create a new relation (1-to-1)
+        provides = (Relation::create("provides"));
+        result &= provides->from(output);
+        result &= provides->to(type);
+    }
+
     return true;
 }
 
-bool Graph::provides(Hyperedge::Hyperedges outputs, Hyperedge* type)
+bool Graph::provides(Set::Sets outputs, Set* type)
 {
     // N-1 relation based on 2-hyperedges (1-1 relations)
     for (auto outputIt : outputs)
@@ -194,21 +233,32 @@ bool Graph::provides(Hyperedge::Hyperedges outputs, Hyperedge* type)
     return true;
 }
 
-bool Graph::needs(Hyperedge* input, Hyperedge* type)
+bool Graph::needs(Set* input, Set* type)
 {
-    // At first, we have to add output & type to the corresponding sets
-    inputs()->contains(input);
-    types()->contains(type);
+    bool result = true;
 
-    // Finally we create a new relation (1-to-1)
-    Hyperedge *needs = (Hyperedge::create("needs"));
-    needs->contains(input);
-    needs->contains(type);
-    contains(needs);
+    // At first, we have to add input & type to the corresponding sets
+    result &= input->isA(this->input());
+    result &= type->isA(this->type());
+
+    // Find a needs relation in input
+    auto edges = input->pointingTo("needs");
+    Relation *needs = NULL;
+    if (edges.size())
+    {
+        needs = static_cast< Relation *>(edges.begin()->second);
+        result &= needs->to(type);
+    } else {
+        // Finally we create a new relation (1-to-1)
+        needs = (Relation::create("needs"));
+        result &= needs->from(input);
+        result &= needs->to(type);
+    }
+
     return true;
 }
 
-bool Graph::needs(Hyperedge::Hyperedges inputs, Hyperedge* type)
+bool Graph::needs(Set::Sets inputs, Set* type)
 {
     // N-1 relation based on 2-hyperedges (1-1 relations)
     for (auto inputIt : inputs)
