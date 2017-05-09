@@ -2,271 +2,399 @@
 
 namespace Software {
 
-Graph::Graph(const std::string& label)
+
+// Type
+Set* Type::superclass = NULL;
+
+Type::Type(const std::string& label)
 : Set(label)
 {
-    Set *algorithm = Set::create("Algorithm");
-    Set *interface = Set::create("Interface");
-    Set *input = Set::create("Input");
-    Set *output = Set::create("Output");
-    Set *type = Set::create("Type");
-    algorithm->memberOf(this);
-    interface->memberOf(this);
-    input->memberOf(this);
-    input->isA(interface);
-    output->memberOf(this);
-    output->isA(interface);
-    type->memberOf(this);
-    // Register Ids for easier access
-    _algId = algorithm->id();
-    _ifId = interface->id();
-    _inpId = input->id();
-    _outpId = output->id();
-    _typeId = type->id();
+    // Create isA relation to the superclass
+    this->isA(Type::Superclass());
 }
 
-Set* Graph::algorithms()
+Set* Type::Superclass()
 {
-    return algorithm()->subclasses();
+    if (!Type::superclass)
+    {
+        Type::superclass = Set::create("Type");
+    }
+    return Type::superclass;
 }
 
-Set* Graph::interfaces()
+// Interface
+Set* Interface::superclass = NULL;
+
+Interface::Interface(const std::string& label)
+: Set(label)
 {
-    return interface()->subclasses();
+    // Create isA relation to the superclass
+    this->isA(Interface::Superclass());
 }
 
-Set* Graph::inputs()
+Set* Interface::Superclass()
 {
-    return input()->subclasses();
+    if (!Interface::superclass)
+    {
+        Interface::superclass = Set::create("Interface");
+    }
+    return Interface::superclass;
 }
 
-Set* Graph::outputs()
+// Input
+Set* Input::superclass = NULL;
+
+Input::Input(const std::string& label)
+: Interface(label)
 {
-    return output()->subclasses();
+    // Create isA relation to the superclass
+    this->isA(Input::Superclass());
 }
 
-Set* Graph::types()
+Set* Input::Superclass()
 {
-    return type()->subclasses();
+    if (!Input::superclass)
+    {
+        Input::superclass = Set::create("Input");
+        Input::superclass->isA(Interface::Superclass());
+    }
+    return Input::superclass;
 }
 
-Set* Graph::algorithm()
-{
-    return Set::promote(_created[_algId]);
-}
-
-Set* Graph::interface()
-{
-    return Set::promote(_created[_ifId]);
-}
-
-Set* Graph::input()
-{
-    return Set::promote(_created[_inpId]);
-}
-
-Set* Graph::output()
-{
-    return Set::promote(_created[_outpId]);
-}
-
-Set* Graph::type()
-{
-    return Set::promote(_created[_typeId]);
-}
-
-Set* Graph::createAlgorithm(const std::string& name)
-{
-    Set *newbie = (Set::create(name));
-    newbie->isA(algorithm());
-    return newbie;
-}
-
-Set* Graph::createInput(const std::string& name)
-{
-    Set *newbie = (Set::create(name));
-    newbie->isA(input());
-    return newbie;
-}
-
-Set* Graph::createOutput(const std::string& name)
-{
-    Set *newbie = (Set::create(name));
-    newbie->isA(output());
-    return newbie;
-}
-
-Set* Graph::createType(const std::string& name)
-{
-    Set *newbie = (Set::create(name));
-    newbie->isA(type());
-    return newbie;
-}
-
-bool Graph::has(Set* algorithm, Set* interface)
+bool Input::needs(Set* type)
 {
     bool result = true;
 
-    // At first, we have to add algorithm & interface to the corresponding sets
-    result &= algorithm->isA(this->algorithm());
-    result &= interface->isA(this->interface());
+    // At first, we have to add device & type to the corresponding sets
+    result &= this->isA(Input::Superclass());
+    result &= type->isA(Type::Superclass());
 
-    // Find a has relation in algorithm
-    auto edges = algorithm->pointingTo("has");
-    Relation *has = NULL;
+    // Find a needs relation in device
+    auto edges = pointingTo("needs");
+    Relation *needs = NULL;
     if (edges.size())
     {
-        has = static_cast< Relation *>(edges.begin()->second);
-        result &= has->to(interface);
+        needs = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
+        result &= needs->to(type);
     } else {
         // Finally we create a new relation (1-to-1)
-        has = (Relation::create("has"));
-        result &= has->from(algorithm);
-        result &= has->to(interface);
+        needs = Relation::create("needs");
+        result &= needs->from(this);
+        result &= needs->to(type);
     }
 
-    return true;
+    return result;
 }
 
-bool Graph::has(Set* algorithm, Set::Sets interfaces)
-{
-    // 1-N relation based on 2-hyperedges (1-1 relations)
-    for (auto interfaceIt : interfaces)
-    {
-        auto interface = interfaceIt.second;
-        has(algorithm, interface);
-    }
-    return true;
-}
-
-bool Graph::has(Set::Sets algorithms, Set* interface)
-{
-    // N-1 relation based on 2-hyperedges
-    for (auto algorithmIt : algorithms)
-    {
-        auto algorithm = algorithmIt.second;
-        has(algorithm, interface);
-    }
-    return true;
-}
-
-bool Graph::has(Set::Sets algorithms, Set::Sets interfaces)
-{
-    // N-M relation based on N * (1-M) relations
-    for (auto algorithmIt : algorithms)
-    {
-        auto algorithm = algorithmIt.second;
-        has(algorithm, interfaces);
-    }
-    return true;
-}
-
-bool Graph::depends(Set* input, Set* output)
+bool Input::depends(Set* output)
 {
     bool result = true;
 
-    // At first, we have to add input & output to the corresponding sets
-    result &= input->isA(this->input());
-    result &= output->isA(this->output());
+    // At first, we have to add device & output to the corresponding sets
+    result &= this->isA(Input::Superclass());
+    result &= output->isA(Output::Superclass());
 
-    // Find a depends relation in input
-    auto edges = input->pointingTo("depends");
+    // Find a depends relation in device
+    auto edges = pointingTo("depends");
     Relation *depends = NULL;
     if (edges.size())
     {
-        depends = static_cast< Relation *>(edges.begin()->second);
+        depends = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
         result &= depends->to(output);
     } else {
         // Finally we create a new relation (1-to-1)
-        depends = (Relation::create("depends"));
-        result &= depends->from(input);
+        depends = Relation::create("depends");
+        result &= depends->from(this);
         result &= depends->to(output);
     }
 
-    return true;
+    return result;
 }
 
-bool Graph::depends(Set::Sets inputs, Set* output)
+// Output
+Set* Output::superclass = NULL;
+
+Output::Output(const std::string& label)
+: Interface(label)
 {
-    // N-1 relation based on 2-hyperedges (1-1 relations)
-    for (auto inputIt : inputs)
-    {
-        auto input = inputIt.second;
-        depends(input, output);
-    }
-    return true;
+    // Create isA relation to the superclass
+    this->isA(Output::Superclass());
 }
 
-bool Graph::provides(Set* output, Set* type)
+Set* Output::Superclass()
+{
+    if (!Output::superclass)
+    {
+        Output::superclass = Set::create("Output");
+        Output::superclass->isA(Interface::Superclass());
+    }
+    return Output::superclass;
+}
+
+bool Output::provides(Set* type)
 {
     bool result = true;
 
     // At first, we have to add output & type to the corresponding sets
-    result &= output->isA(this->output());
-    result &= type->isA(this->type());
+    result &= this->isA(Output::Superclass());
+    result &= type->isA(Type::Superclass());
 
-    // Find a provides relation in output
-    auto edges = output->pointingTo("provides");
+    // Find a provides relation in device
+    auto edges = pointingTo("provides");
     Relation *provides = NULL;
     if (edges.size())
     {
-        provides = static_cast< Relation *>(edges.begin()->second);
+        provides = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
         result &= provides->to(type);
     } else {
         // Finally we create a new relation (1-to-1)
-        provides = (Relation::create("provides"));
-        result &= provides->from(output);
+        provides = Relation::create("provides");
+        result &= provides->from(this);
         result &= provides->to(type);
     }
 
-    return true;
+    return result;
+}
+
+// Algorithm
+Set* Algorithm::superclass = NULL;
+
+Algorithm::Algorithm(const std::string& label)
+: Set(label)
+{
+    // Create isA relation to the superclass
+    this->isA(superclass);
+}
+
+Set* Algorithm::Superclass()
+{
+    if (!Algorithm::superclass)
+    {
+        Algorithm::superclass = Set::create("Algorithm");
+    }
+    return Algorithm::superclass;
+}
+
+// Algorithms & Interfaces
+bool Algorithm::has(Set* interface)
+{
+    bool result = true;
+
+    // At first, we have to add device & interface to the corresponding sets
+    result &= this->isA(Algorithm::Superclass());
+    result &= interface->isA(Interface::Superclass());
+
+    // Find a has relation in device
+    auto edges = pointingTo("has");
+    Relation *has = NULL;
+    if (edges.size())
+    {
+        has = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
+        result &= has->to(interface);
+    } else {
+        // Finally we create a new relation (1-to-1)
+        has = Relation::create("has");
+        result &= has->from(this);
+        result &= has->to(interface);
+    }
+
+    return result;
+}
+
+bool Algorithm::has(Set::Sets interfaces)
+{
+    bool result = true;
+    // 1-N relation based on 2-hyperedges (1-1 relations)
+    for (auto interfaceId : interfaces)
+    {
+        auto interface = Set::promote(Hyperedge::find(interfaceId));
+        result &= has(interface);
+    }
+    return result;
+}
+
+Set* Algorithm::aggregates()
+{
+    Set::Sets result;
+    Hyperedge::Hyperedges hasRels = pointingTo("has");
+    for (auto relId : hasRels)
+    {
+        auto others = Set::promote(Hyperedge::find(relId)->pointingTo());
+        result.insert(others.begin(), others.end());
+    }
+    return Set::create(result, "aggregates");
+}   
+
+// GRAPH STUFF
+
+Graph::Graph(const std::string& label)
+: Set(label)
+{
+    Algorithm::Superclass()->memberOf(this);
+    Interface::Superclass()->memberOf(this);
+    Input::Superclass()->memberOf(this);
+    //input->isA(interface);
+    Output::Superclass()->memberOf(this);
+    //output->isA(interface);
+    Type::Superclass()->memberOf(this);
+}
+
+Set* Graph::algorithms()
+{
+    Relation *superOf = Algorithm::Superclass()->superclassOf();
+    Set *result = Set::create(Set::promote(superOf->pointingTo()), "Algorithms");
+    delete superOf;
+    return result;
+}
+
+Set* Graph::interfaces()
+{
+    Relation *superOf = Interface::Superclass()->superclassOf();
+    Set *result = Set::create(Set::promote(superOf->pointingTo()), "Interfaces");
+    delete superOf;
+    return result;
+}
+
+Set* Graph::inputs()
+{
+    Relation *superOf = Input::Superclass()->superclassOf();
+    Set *result = Set::create(Set::promote(superOf->pointingTo()), "Inputs");
+    delete superOf;
+    return result;
+}
+
+Set* Graph::outputs()
+{
+    Relation *superOf = Output::Superclass()->superclassOf();
+    Set *result = Set::create(Set::promote(superOf->pointingTo()), "Outputs");
+    delete superOf;
+    return result;
+}
+
+Set* Graph::types()
+{
+    Relation *superOf = Type::Superclass()->superclassOf();
+    Set *result = Set::create(Set::promote(superOf->pointingTo()), "Types");
+    delete superOf;
+    return result;
+}
+
+Algorithm* Graph::createAlgorithm(const std::string& name)
+{
+    Set *newbie = Set::create(name);
+    newbie->isA(Algorithm::Superclass());
+    return static_cast<Algorithm*>(newbie);
+}
+
+Input* Graph::createInput(const std::string& name)
+{
+    Set *newbie = Set::create(name);
+    newbie->isA(Input::Superclass());
+    return static_cast<Input*>(newbie);
+}
+
+Output* Graph::createOutput(const std::string& name)
+{
+    Set *newbie = Set::create(name);
+    newbie->isA(Output::Superclass());
+    return static_cast<Output*>(newbie);
+}
+
+Type* Graph::createType(const std::string& name)
+{
+    Set *newbie = Set::create(name);
+    newbie->isA(Type::Superclass());
+    return static_cast<Type*>(newbie);
+}
+
+bool Graph::has(Set* algorithm, Set* interface)
+{
+    return static_cast<Algorithm*>(algorithm)->has(interface);
+}
+
+bool Graph::has(Set* algorithm, Set::Sets interfaces)
+{
+    return static_cast<Algorithm*>(algorithm)->has(interfaces);
+}
+
+bool Graph::has(Set::Sets algorithms, Set* interface)
+{
+    bool result = true;
+
+    // N-1 relation based on 2-hyperedges
+    for (auto algorithmId : algorithms)
+    {
+        auto algorithm = static_cast<Algorithm*>(Hyperedge::find(algorithmId));
+        result &= algorithm->has(interface);
+    }
+    return result;
+}
+
+bool Graph::has(Set::Sets algorithms, Set::Sets interfaces)
+{
+    bool result = true;
+
+    // N-M relation based on N * (1-M) relations
+    for (auto algorithmId : algorithms)
+    {
+        auto algorithm = static_cast<Algorithm*>(Hyperedge::find(algorithmId));
+        result &= has(algorithm, interfaces);
+    }
+    return result;
+}
+
+bool Graph::depends(Set* input, Set* output)
+{
+    return static_cast<Input*>(input)->depends(output);
+}
+
+bool Graph::depends(Set::Sets inputs, Set* output)
+{
+    bool result = true;
+
+    // N-1 relation based on 2-hyperedges (1-1 relations)
+    for (auto inputId : inputs)
+    {
+        auto input = static_cast<Input*>(Hyperedge::find(inputId));
+        result &= input->depends(output);
+    }
+    return result;
+}
+
+bool Graph::provides(Set* output, Set* type)
+{
+    return static_cast<Output*>(output)->provides(type);
 }
 
 bool Graph::provides(Set::Sets outputs, Set* type)
 {
+    bool result = true;
+
     // N-1 relation based on 2-hyperedges (1-1 relations)
-    for (auto outputIt : outputs)
+    for (auto outputId : outputs)
     {
-        auto output = outputIt.second;
-        provides(output, type);
+        auto output = static_cast<Output*>(Hyperedge::find(outputId));
+        result &= output->provides(type);
     }
-    return true;
+    return result;
 }
 
 bool Graph::needs(Set* input, Set* type)
 {
-    bool result = true;
-
-    // At first, we have to add input & type to the corresponding sets
-    result &= input->isA(this->input());
-    result &= type->isA(this->type());
-
-    // Find a needs relation in input
-    auto edges = input->pointingTo("needs");
-    Relation *needs = NULL;
-    if (edges.size())
-    {
-        needs = static_cast< Relation *>(edges.begin()->second);
-        result &= needs->to(type);
-    } else {
-        // Finally we create a new relation (1-to-1)
-        needs = (Relation::create("needs"));
-        result &= needs->from(input);
-        result &= needs->to(type);
-    }
-
-    return true;
+    return static_cast<Input*>(input)->needs(type);
 }
 
 bool Graph::needs(Set::Sets inputs, Set* type)
 {
+    bool result = true;
+
     // N-1 relation based on 2-hyperedges (1-1 relations)
-    for (auto inputIt : inputs)
+    for (auto inputId : inputs)
     {
-        auto input = inputIt.second;
-        needs(input, type);
+        auto input = static_cast<Input*>(Hyperedge::find(inputId));
+        result &= input->needs(type);
     }
-    return true;
+    return result;
 }
 
 }
