@@ -28,7 +28,7 @@ pkg_check_modules(swgraph_PKGCONFIG REQUIRED
 include_directories(${swgraph_PKGCONFIG_INCLUDE_DIRS})
 #message(${swgraph_PKGCONFIG_INCLUDE_DIRS})
 link_directories(${swgraph_PKGCONFIG_LIBRARY_DIRS})
-add_definitions(${swgraph_PKGCONFIG_CFLAGS_OTHER} -ggdb --pedantic -Wall -Werror -std=c++11)
+add_definitions(${swgraph_PKGCONFIG_CFLAGS_OTHER} -ggdb --pedantic -Wall -std=c++11)
 
 set(SOURCES
     src/SoftwareGraph.cpp

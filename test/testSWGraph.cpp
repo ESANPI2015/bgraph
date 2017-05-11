@@ -1,5 +1,7 @@
 #include "SoftwareGraph.hpp"
+#include "HyperedgeYAML.hpp"
 
+#include <fstream>
 #include <iostream>
 #include <cassert>
 
@@ -23,6 +25,15 @@ int main(void)
 
     std::cout << Hyperedge::serialize(&swgraph) << std::endl;
 
+    std::cout << "*** Store into YAML ***" << std::endl;
+    std::ofstream fout;
+    fout.open("test.yml");
+    if(fout.good()) {
+        fout << YAML::store(&swgraph);
+    } else {
+        std::cout << "FAILED\n";
+    }
+    fout.close();
     std::cout << "*** End of test ***" << std::endl;
     Hyperedge::cleanup();
 }
