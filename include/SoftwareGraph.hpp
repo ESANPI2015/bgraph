@@ -17,8 +17,6 @@ namespace Software {
     * Would it be better to just use SIMPLE 2-hyperedges for the relations (everything based on 1-1 relations)?
       NOTE: This would better fit to databases with fixed tables like ID -> (ID, ID)
     * How are the constraints on AGGREGATION (has)? Or, can an interface be owned by only one device?
-    * Subclassing versus Subgraphs: Specify this. How do we handle devices containing other devices?
-      -> SEE SUBSUMPTION AND COMPOSITION RELATIONS
     * Should we introduce intermediate concepts like Ownership(has) or others which are shared amongst other domains?
 */
 
@@ -28,14 +26,10 @@ class Type: public Set
         // Gives a ptr to the type superclass
         static Set* Superclass();
         
-        // Promotes a Set to be an Type
-        static Type* promote(Set *set);
-
     private:
-        // Constructors
-        Type(const std::string& label="Type");
-
-        static Set* superclass;
+        // The classLabel is a string representing the superclass
+        static const std::string classLabel;
+        static unsigned lastSuperclassId;
 };
 class Interface : public Set
 {
@@ -45,14 +39,10 @@ class Interface : public Set
         // Gives a ptr to the interface superclass
         static Set* Superclass();
         
-        // Promotes a Set to be an Interface
-        static Interface* promote(Set *set);
-
     private:
-        // Constructors
-        Interface(const std::string& label="Interface");
-
-        static Set* superclass;
+        // The classLabel is a string representing the superclass
+        static const std::string classLabel;
+        static unsigned lastSuperclassId;
 };
 class Input : public Interface
 {
@@ -65,14 +55,10 @@ class Input : public Interface
         // Gives a ptr to the input superclass
         static Set* Superclass();
         
-        // Promotes a Set to be an Input
-        static Input* promote(Set *set);
-
     private:
-        // Constructors
-        Input(const std::string& label="Input");
-
-        static Set* superclass;
+        // The classLabel is a string representing the superclass
+        static const std::string classLabel;
+        static unsigned lastSuperclassId;
 };
 class Output : public Interface
 {
@@ -83,15 +69,10 @@ class Output : public Interface
         // Gives a ptr to the output superclass
         static Set* Superclass();
         
-        // Promotes a Set to be an Output
-        // This means that it will get an isA relation to the interface superclass!!!
-        static Output* promote(Set *set);
-
     private:
-        // Constructors
-        Output(const std::string& label="Output");
-
-        static Set* superclass;
+        // The classLabel is a string representing the superclass
+        static const std::string classLabel;
+        static unsigned lastSuperclassId;
 };
 class Algorithm : public Set
 {
@@ -107,14 +88,10 @@ class Algorithm : public Set
         // Gives a ptr to the interface superclass
         static Set* Superclass();
 
-        // Promotes a Set to be a Algorithm
-        static Algorithm* promote(Set *set);
-
     private:
-        // Constructors
-        Algorithm(const std::string& label="Algorithm");
-
-        static Set* superclass;
+        // The classLabel is a string representing the superclass
+        static const std::string classLabel;
+        static unsigned lastSuperclassId;
 };
 
 
@@ -160,12 +137,6 @@ class Graph : public Set
         // TODO: Multiple outputs to one input make only sense IFF their types do not overlap! But maybe its something nice to do?
         bool depends(Set* input, Set* output);
         bool depends(Set::Sets inputs, Set* output);
-
-    private:
-        // Constructor which creates a Set and all standard subsets
-        // Subsets: Algorithms, Interfaces: Inputs/Outputs, Types
-        Graph(const std::string& label="Software");
-
 };
 
 }
