@@ -6,11 +6,10 @@ namespace Software {
 // Type
 Set* Type::superclass = NULL;
 
-Type::Type(const std::string& label)
-: Set(label)
+Type* Type::promote(Set *set)
 {
-    // Create isA relation to the superclass
-    this->isA(Type::Superclass());
+    set->isA(Type::Superclass());
+    return static_cast<Type*>(set);
 }
 
 Set* Type::Superclass()
@@ -25,11 +24,10 @@ Set* Type::Superclass()
 // Interface
 Set* Interface::superclass = NULL;
 
-Interface::Interface(const std::string& label)
-: Set(label)
+Interface* Interface::promote(Set *set)
 {
-    // Create isA relation to the superclass
-    this->isA(Interface::Superclass());
+    set->isA(Interface::Superclass());
+    return static_cast<Interface*>(set);
 }
 
 Set* Interface::Superclass()
@@ -44,11 +42,10 @@ Set* Interface::Superclass()
 // Input
 Set* Input::superclass = NULL;
 
-Input::Input(const std::string& label)
-: Interface(label)
+Input* Input::promote(Set *set)
 {
-    // Create isA relation to the superclass
-    this->isA(Input::Superclass());
+    set->isA(Input::Superclass());
+    return static_cast<Input*>(set);
 }
 
 Set* Input::Superclass()
@@ -74,7 +71,7 @@ bool Input::needs(Set* type)
     Relation *needs = NULL;
     if (edges.size())
     {
-        needs = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
+        needs = Relation::promote(Hyperedge::find(*edges.begin()));
         result &= needs->to(type);
     } else {
         // Finally we create a new relation (1-to-1)
@@ -99,7 +96,7 @@ bool Input::depends(Set* output)
     Relation *depends = NULL;
     if (edges.size())
     {
-        depends = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
+        depends = Relation::promote(Hyperedge::find(*edges.begin()));
         result &= depends->to(output);
     } else {
         // Finally we create a new relation (1-to-1)
@@ -114,11 +111,10 @@ bool Input::depends(Set* output)
 // Output
 Set* Output::superclass = NULL;
 
-Output::Output(const std::string& label)
-: Interface(label)
+Output* Output::promote(Set *set)
 {
-    // Create isA relation to the superclass
-    this->isA(Output::Superclass());
+    set->isA(Output::Superclass());
+    return static_cast<Output*>(set);
 }
 
 Set* Output::Superclass()
@@ -144,7 +140,7 @@ bool Output::provides(Set* type)
     Relation *provides = NULL;
     if (edges.size())
     {
-        provides = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
+        provides = Relation::promote(Hyperedge::find(*edges.begin()));
         result &= provides->to(type);
     } else {
         // Finally we create a new relation (1-to-1)
@@ -159,11 +155,10 @@ bool Output::provides(Set* type)
 // Algorithm
 Set* Algorithm::superclass = NULL;
 
-Algorithm::Algorithm(const std::string& label)
-: Set(label)
+Algorithm* Algorithm::promote(Set *set)
 {
-    // Create isA relation to the superclass
-    this->isA(superclass);
+    set->isA(Algorithm::Superclass());
+    return static_cast<Algorithm*>(set);
 }
 
 Set* Algorithm::Superclass()
@@ -189,7 +184,7 @@ bool Algorithm::has(Set* interface)
     Relation *has = NULL;
     if (edges.size())
     {
-        has = static_cast< Relation* >(Hyperedge::find(*edges.begin()));
+        has = Relation::promote(Hyperedge::find(*edges.begin()));
         result &= has->to(interface);
     } else {
         // Finally we create a new relation (1-to-1)
@@ -227,16 +222,15 @@ Set* Algorithm::aggregates()
 
 // GRAPH STUFF
 
-Graph::Graph(const std::string& label)
-: Set(label)
+Graph* Graph::create(const std::string& label)
 {
-    Algorithm::Superclass()->memberOf(this);
-    Interface::Superclass()->memberOf(this);
-    Input::Superclass()->memberOf(this);
-    //input->isA(interface);
-    Output::Superclass()->memberOf(this);
-    //output->isA(interface);
-    Type::Superclass()->memberOf(this);
+    Set* neu = Set::create(label);
+    Algorithm::Superclass()->memberOf(neu);
+    Interface::Superclass()->memberOf(neu);
+    Input::Superclass()->memberOf(neu);
+    Output::Superclass()->memberOf(neu);
+    Type::Superclass()->memberOf(neu);
+    return static_cast<Graph*>(neu);
 }
 
 Set* Graph::algorithms()
@@ -282,39 +276,35 @@ Set* Graph::types()
 Algorithm* Graph::createAlgorithm(const std::string& name)
 {
     Set *newbie = Set::create(name);
-    newbie->isA(Algorithm::Superclass());
-    return static_cast<Algorithm*>(newbie);
+    return Algorithm::promote(newbie);
 }
 
 Input* Graph::createInput(const std::string& name)
 {
     Set *newbie = Set::create(name);
-    newbie->isA(Input::Superclass());
-    return static_cast<Input*>(newbie);
+    return Input::promote(newbie);
 }
 
 Output* Graph::createOutput(const std::string& name)
 {
     Set *newbie = Set::create(name);
-    newbie->isA(Output::Superclass());
-    return static_cast<Output*>(newbie);
+    return Output::promote(newbie);
 }
 
 Type* Graph::createType(const std::string& name)
 {
     Set *newbie = Set::create(name);
-    newbie->isA(Type::Superclass());
-    return static_cast<Type*>(newbie);
+    return Type::promote(newbie);
 }
 
 bool Graph::has(Set* algorithm, Set* interface)
 {
-    return static_cast<Algorithm*>(algorithm)->has(interface);
+    return Algorithm::promote(algorithm)->has(interface);
 }
 
 bool Graph::has(Set* algorithm, Set::Sets interfaces)
 {
-    return static_cast<Algorithm*>(algorithm)->has(interfaces);
+    return Algorithm::promote(algorithm)->has(interfaces);
 }
 
 bool Graph::has(Set::Sets algorithms, Set* interface)
@@ -324,7 +314,7 @@ bool Graph::has(Set::Sets algorithms, Set* interface)
     // N-1 relation based on 2-hyperedges
     for (auto algorithmId : algorithms)
     {
-        auto algorithm = static_cast<Algorithm*>(Hyperedge::find(algorithmId));
+        auto algorithm = Algorithm::promote(Set::promote(Hyperedge::find(algorithmId)));
         result &= algorithm->has(interface);
     }
     return result;
@@ -337,7 +327,7 @@ bool Graph::has(Set::Sets algorithms, Set::Sets interfaces)
     // N-M relation based on N * (1-M) relations
     for (auto algorithmId : algorithms)
     {
-        auto algorithm = static_cast<Algorithm*>(Hyperedge::find(algorithmId));
+        auto algorithm = Algorithm::promote(Set::promote(Hyperedge::find(algorithmId)));
         result &= has(algorithm, interfaces);
     }
     return result;
@@ -345,7 +335,7 @@ bool Graph::has(Set::Sets algorithms, Set::Sets interfaces)
 
 bool Graph::depends(Set* input, Set* output)
 {
-    return static_cast<Input*>(input)->depends(output);
+    return Input::promote(input)->depends(output);
 }
 
 bool Graph::depends(Set::Sets inputs, Set* output)
@@ -355,7 +345,7 @@ bool Graph::depends(Set::Sets inputs, Set* output)
     // N-1 relation based on 2-hyperedges (1-1 relations)
     for (auto inputId : inputs)
     {
-        auto input = static_cast<Input*>(Hyperedge::find(inputId));
+        auto input = Input::promote(Set::promote(Hyperedge::find(inputId)));
         result &= input->depends(output);
     }
     return result;
@@ -363,7 +353,7 @@ bool Graph::depends(Set::Sets inputs, Set* output)
 
 bool Graph::provides(Set* output, Set* type)
 {
-    return static_cast<Output*>(output)->provides(type);
+    return Output::promote(output)->provides(type);
 }
 
 bool Graph::provides(Set::Sets outputs, Set* type)
@@ -373,7 +363,7 @@ bool Graph::provides(Set::Sets outputs, Set* type)
     // N-1 relation based on 2-hyperedges (1-1 relations)
     for (auto outputId : outputs)
     {
-        auto output = static_cast<Output*>(Hyperedge::find(outputId));
+        auto output = Output::promote(Set::promote(Hyperedge::find(outputId)));
         result &= output->provides(type);
     }
     return result;
@@ -381,7 +371,7 @@ bool Graph::provides(Set::Sets outputs, Set* type)
 
 bool Graph::needs(Set* input, Set* type)
 {
-    return static_cast<Input*>(input)->needs(type);
+    return Input::promote(input)->needs(type);
 }
 
 bool Graph::needs(Set::Sets inputs, Set* type)
@@ -391,7 +381,7 @@ bool Graph::needs(Set::Sets inputs, Set* type)
     // N-1 relation based on 2-hyperedges (1-1 relations)
     for (auto inputId : inputs)
     {
-        auto input = static_cast<Input*>(Hyperedge::find(inputId));
+        auto input = Input::promote(Set::promote(Hyperedge::find(inputId)));
         result &= input->needs(type);
     }
     return result;

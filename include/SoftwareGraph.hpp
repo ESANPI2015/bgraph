@@ -25,43 +25,38 @@ namespace Software {
 class Type: public Set
 {
     public:
-        // Constructors
-        Type(const std::string& label="Type");
-
         // Gives a ptr to the type superclass
         static Set* Superclass();
         
         // Promotes a Set to be an Type
-        // This means that it will get an isA relation to the interface superclass!!!
-        //static Type* promote(Set *set);
+        static Type* promote(Set *set);
 
     private:
+        // Constructors
+        Type(const std::string& label="Type");
+
         static Set* superclass;
 };
 class Interface : public Set
 {
     public:
-        // Constructors
-        Interface(const std::string& label="Interface");
-
         // bool has(Set* type);
 
         // Gives a ptr to the interface superclass
         static Set* Superclass();
         
         // Promotes a Set to be an Interface
-        // This means that it will get an isA relation to the interface superclass!!!
-        //static Interface* promote(Set *set);
+        static Interface* promote(Set *set);
 
     private:
+        // Constructors
+        Interface(const std::string& label="Interface");
+
         static Set* superclass;
 };
 class Input : public Interface
 {
     public:
-        // Constructors
-        Input(const std::string& label="Input");
-
         // Inputs & Types
         bool needs(Set* type);
         // Inputs & Outputs
@@ -71,18 +66,17 @@ class Input : public Interface
         static Set* Superclass();
         
         // Promotes a Set to be an Input
-        // This means that it will get an isA relation to the interface superclass!!!
-        //static Input* promote(Set *set);
+        static Input* promote(Set *set);
 
     private:
+        // Constructors
+        Input(const std::string& label="Input");
+
         static Set* superclass;
 };
 class Output : public Interface
 {
     public:
-        // Constructors
-        Output(const std::string& label="Output");
-
         // Outputs & Types
         bool provides(Set* type);
 
@@ -91,17 +85,17 @@ class Output : public Interface
         
         // Promotes a Set to be an Output
         // This means that it will get an isA relation to the interface superclass!!!
-        //static Output* promote(Set *set);
+        static Output* promote(Set *set);
 
     private:
+        // Constructors
+        Output(const std::string& label="Output");
+
         static Set* superclass;
 };
 class Algorithm : public Set
 {
     public:
-        // Constructors
-        Algorithm(const std::string& label="Algorithm");
-
         // Algorithms & Interfaces
         bool has(Set* interface);
         bool has(Set::Sets interfaces);
@@ -114,9 +108,12 @@ class Algorithm : public Set
         static Set* Superclass();
 
         // Promotes a Set to be a Algorithm
-        //static Bus* promote(Set *set);
+        static Algorithm* promote(Set *set);
 
     private:
+        // Constructors
+        Algorithm(const std::string& label="Algorithm");
+
         static Set* superclass;
 };
 
@@ -131,11 +128,8 @@ class Algorithm : public Set
 class Graph : public Set
 {
     public:
-        // Constructor which creates a Set and all standard subsets
-        // Subsets: Algorithms, Interfaces: Inputs/Outputs, Types
-        Graph(const std::string& label="Software");
-
         // Factory functions
+        static Graph* create(const std::string& label="Software");
         Algorithm* createAlgorithm(const std::string& name="Algorithm");
         Input* createInput(const std::string& name="Input");
         Output* createOutput(const std::string& name="Output");
@@ -166,6 +160,12 @@ class Graph : public Set
         // TODO: Multiple outputs to one input make only sense IFF their types do not overlap! But maybe its something nice to do?
         bool depends(Set* input, Set* output);
         bool depends(Set::Sets inputs, Set* output);
+
+    private:
+        // Constructor which creates a Set and all standard subsets
+        // Subsets: Algorithms, Interfaces: Inputs/Outputs, Types
+        Graph(const std::string& label="Software");
+
 };
 
 }
