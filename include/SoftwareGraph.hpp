@@ -1,6 +1,7 @@
 #ifndef _SOFTWARE_GRAPH_HPP
 #define _SOFTWARE_GRAPH_HPP
 
+#include "SetSystem.hpp"
 #include "Set.hpp"
 #include "Relation.hpp"
 
@@ -20,78 +21,78 @@ namespace Software {
     * Should we introduce intermediate concepts like Ownership(has) or others which are shared amongst other domains?
 */
 
+class Graph;
+
 class Type: public Set
 {
     public:
-        // Gives a ptr to the type superclass
-        static Set* Superclass();
-        
-    private:
-        // The classLabel is a string representing the superclass
-        static const std::string classLabel;
-        static unsigned lastSuperclassId;
+        /* Constructor */
+        Type(const unsigned id, const std::string& label="")
+        : Set(id,label)
+        {}
+
+        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
+        static const std::string superclassLabel;
 };
+
 class Interface : public Set
 {
     public:
-        // bool has(Set* type);
+        /* Constructor */
+        Interface(const unsigned id, const std::string& label="")
+        : Set(id,label)
+        {}
 
-        // Gives a ptr to the interface superclass
-        static Set* Superclass();
-        
-    private:
-        // The classLabel is a string representing the superclass
-        static const std::string classLabel;
-        static unsigned lastSuperclassId;
+        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
+        static const std::string superclassLabel;
 };
+
 class Input : public Interface
 {
     public:
-        // Inputs & Types
-        bool needs(Set* type);
-        // Inputs & Outputs
-        bool depends(Set* output);
+        /* Constructor */
+        Input(const unsigned id, const std::string& label="")
+        : Interface(id,label)
+        {}
 
-        // Gives a ptr to the input superclass
-        static Set* Superclass();
-        
-    private:
-        // The classLabel is a string representing the superclass
-        static const std::string classLabel;
-        static unsigned lastSuperclassId;
+        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
+        static const std::string superclassLabel;
+
+        // Inputs & Types
+        unsigned needs(Graph* graph, const unsigned typeId);
+        // Inputs & Outputs
+        unsigned depends(Graph* graph, const unsigned outputId);
 };
+
 class Output : public Interface
 {
     public:
-        // Outputs & Types
-        bool provides(Set* type);
+        /* Constructor */
+        Output(const unsigned id, const std::string& label="")
+        : Interface(id,label)
+        {}
 
-        // Gives a ptr to the output superclass
-        static Set* Superclass();
-        
-    private:
-        // The classLabel is a string representing the superclass
-        static const std::string classLabel;
-        static unsigned lastSuperclassId;
+        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
+        static const std::string superclassLabel;
+
+        // Outputs & Types
+        unsigned provides(Graph* graph, const unsigned typeId);
+
 };
+
 class Algorithm : public Set
 {
     public:
+        /* Constructor */
+        Algorithm(const unsigned id, const std::string& label="")
+        : Set(id,label)
+        {}
+
+        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
+        static const std::string superclassLabel;
+
         // Algorithms & Interfaces
-        bool has(Set* interface);
-        bool has(Set::Sets interfaces);
-
-        // Queries:
-        // Returns a set containing all things which are related to us by a "has" relation
-        Set* aggregates();
-
-        // Gives a ptr to the interface superclass
-        static Set* Superclass();
-
-    private:
-        // The classLabel is a string representing the superclass
-        static const std::string classLabel;
-        static unsigned lastSuperclassId;
+        unsigned has(Graph* graph, const unsigned interfaceId);
 };
 
 
@@ -102,41 +103,43 @@ class Algorithm : public Set
     - Types should be trees but not DAGs (?)
     - A dependency between input and output implies that their types match/are compatible
 */
-class Graph : public Set
+class Graph : public SetSystem
 {
     public:
+        // Constructor/Destructor
+        Graph();
+        ~Graph();
+
+        // Returns the id of an representative of the classes
+        unsigned algorithmClass();
+        unsigned interfaceClass();
+        unsigned inputClass();
+        unsigned outputClass();
+        unsigned typeClass();
+
         // Factory functions
-        static Graph* create(const std::string& label="Software");
-        Algorithm* createAlgorithm(const std::string& name="Algorithm");
-        Input* createInput(const std::string& name="Input");
-        Output* createOutput(const std::string& name="Output");
-        Type* createType(const std::string& name="Type");
+        unsigned createAlgorithm(const std::string& name="Algorithm");
+        unsigned createInput(const std::string& name="Input");
+        unsigned createOutput(const std::string& name="Output");
+        unsigned createType(const std::string& name="Type");
 
         // Queries
         // NOTE: Return true sets whose members are all of the same type/superclass
-        Set *algorithms();
-        Set *interfaces();
-        Set *inputs();
-        Set *outputs();
-        Set *types();
+        unsigned algorithms();
+        unsigned interfaces();
+        unsigned inputs();
+        unsigned outputs();
+        unsigned types();
     
         // Algorithms & I/O/P
-        bool has(Set* algorithm, Set* interface);
-        bool has(Set* algorithm, Set::Sets interfaces);
-        // The following functions are allowed because you want to have ALGORITHM CLASSES using the same INTERFACE CLASSES.
-        bool has(Set::Sets algorithms, Set* interface);
-        bool has(Set::Sets algorithms, Set::Sets interfaces);
+        unsigned has(const unsigned algorithmId, const unsigned interfaceId);
 
         // I/O & Type
-        bool provides(Set* output, Set* type);
-        bool provides(Set::Sets outputs, Set* type);
-        bool needs(Set* input, Set* type);
-        bool needs(Set::Sets inputs, Set* type);
+        unsigned provides(const unsigned outputId, const unsigned typeId);
+        unsigned needs(const unsigned inputId, const unsigned typeId);
 
         // I/O & Dependencies
-        // TODO: Multiple outputs to one input make only sense IFF their types do not overlap! But maybe its something nice to do?
-        bool depends(Set* input, Set* output);
-        bool depends(Set::Sets inputs, Set* output);
+        unsigned depends(const unsigned inputId, const unsigned outputId);
 };
 
 }
