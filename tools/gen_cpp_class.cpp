@@ -6,7 +6,6 @@
 
 int main(void)
 {
-    Software::Graph* swgraph = Software::Graph::create();
 
     // TODO:
     // * Import software spec
@@ -14,16 +13,17 @@ int main(void)
     // * Create a class header for each algorithm
 
     // Test case:
-    auto newEdges = YAML::load(YAML::LoadFile("test.yml"));
+    auto hypergraph = YAML::LoadFile("swgraph.yml").as<Hypergraph*>();
+    auto swgraph = static_cast<Software::Graph*>(hypergraph);
+
     // Get all algorithms
-    auto algorithms = swgraph->algorithms()->members();
+    auto algorithms = swgraph->members(swgraph->algorithms());
 
     // For each of these algorithms
     for (auto algorithmId : algorithms)
     {
-        auto algorithm = Software::Algorithm::promote(Set::promote(Hyperedge::find(algorithmId)));
+        auto algorithm = swgraph->get(algorithmId);
         std::cout << "Found algorithm " << algorithm->label() << "\n";
     }
-
-    Hyperedge::cleanup();
+    delete swgraph;
 }
