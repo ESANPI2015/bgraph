@@ -1,16 +1,27 @@
 #ifndef _SOFTWARE_GRAPH_HPP
 #define _SOFTWARE_GRAPH_HPP
 
-#include "SetSystem.hpp"
-#include "Set.hpp"
-#include "Relation.hpp"
+#include "Conceptgraph.hpp"
 
 namespace Software {
 
 /*
     Some notes:
-    We introduce some SUPERCLASSES as C++ classes AS WELL.
-    But under the hood a IS-A relationship ensures that e.g. every subdevice is a device.
+    The underlying fundament is the concept graph.
+    In this environment there are two main entities, concepts & relations between them.
+    This class is derived from the concept graph class.
+
+    It introduces these different concepts: ALGORITHM, INPUT, OUTPUT, INTERFACE
+    The domain is encoded as follows:
+    
+    ALGORITHM -- has --> INTERFACE
+    INPUT <-- is-a --> INTERFACE
+    OUTPUT <-- is-a --> INTERFACE
+    ALGORITHM <-- needs --> INPUT
+    ALGORITHM <-- provides --> OUTPUT
+    INPUT <-- dependsOn --> OUTPUT
+
+    If some X is a ALGORITHM then there exists a path of IS-A relations from X to ALGORITHM
     
     Open questions:
     * Does it makes sense to have 1-1, 1-N, N-1 and N-M versions of the relations?
@@ -23,79 +34,6 @@ namespace Software {
 
 class Graph;
 
-class Type: public Set
-{
-    public:
-        /* Constructor */
-        Type(const unsigned id, const std::string& label="")
-        : Set(id,label)
-        {}
-
-        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
-        static const std::string superclassLabel;
-};
-
-class Interface : public Set
-{
-    public:
-        /* Constructor */
-        Interface(const unsigned id, const std::string& label="")
-        : Set(id,label)
-        {}
-
-        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
-        static const std::string superclassLabel;
-};
-
-class Input : public Interface
-{
-    public:
-        /* Constructor */
-        Input(const unsigned id, const std::string& label="")
-        : Interface(id,label)
-        {}
-
-        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
-        static const std::string superclassLabel;
-
-        // Inputs & Types
-        unsigned needs(Graph* graph, const unsigned typeId);
-        // Inputs & Outputs
-        unsigned depends(Graph* graph, const unsigned outputId);
-};
-
-class Output : public Interface
-{
-    public:
-        /* Constructor */
-        Output(const unsigned id, const std::string& label="")
-        : Interface(id,label)
-        {}
-
-        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
-        static const std::string superclassLabel;
-
-        // Outputs & Types
-        unsigned provides(Graph* graph, const unsigned typeId);
-
-};
-
-class Algorithm : public Set
-{
-    public:
-        /* Constructor */
-        Algorithm(const unsigned id, const std::string& label="")
-        : Set(id,label)
-        {}
-
-        // This is holding a label to identify instances of this class via (* -- isA --> superclassLabel) patterns
-        static const std::string superclassLabel;
-
-        // Algorithms & Interfaces
-        unsigned has(Graph* graph, const unsigned interfaceId);
-};
-
-
 /*
     CONSISTENCY CHECKS
     - Only one type / input,output,parameter
@@ -103,43 +41,57 @@ class Algorithm : public Set
     - Types should be trees but not DAGs (?)
     - A dependency between input and output implies that their types match/are compatible
 */
-class Graph : public SetSystem
+class Graph : public Conceptgraph
 {
     public:
+        // Labels for identifiing the main concepts
+        static const std::string AlgorithmLabel;
+        static const std::string InterfaceLabel;
+        static const std::string InputLabel;
+        static const std::string OutputLabel;
+
         // Constructor/Destructor
         Graph();
+        Graph(Conceptgraph& A);
         ~Graph();
-
-        // Returns the id of an representative of the classes
-        unsigned algorithmClass();
-        unsigned interfaceClass();
-        unsigned inputClass();
-        unsigned outputClass();
-        unsigned typeClass();
 
         // Factory functions
         unsigned createAlgorithm(const std::string& name="Algorithm");
+        unsigned createInterface(const std::string& name="Interface");
         unsigned createInput(const std::string& name="Input");
         unsigned createOutput(const std::string& name="Output");
-        unsigned createType(const std::string& name="Type");
 
         // Queries
         // NOTE: Return true sets whose members are all of the same type/superclass
-        unsigned algorithms();
-        unsigned interfaces();
-        unsigned inputs();
-        unsigned outputs();
-        unsigned types();
+        Hyperedges algorithms(const std::string& name="");
+        Hyperedges interfaces(const std::string& name="");
+        Hyperedges inputs(const std::string& name="");
+        Hyperedges outputs(const std::string& name="");
     
         // Algorithms & I/O/P
+        // RULE: A has X -> X is-a Interface
+        // RULE: A provides O -> A has O, O is-a Output (, O is-a Interface)
+        // RULE: A needs I -> A has I, I is-a Input (, I is-a Interface)
         unsigned has(const unsigned algorithmId, const unsigned interfaceId);
-
-        // I/O & Type
-        unsigned provides(const unsigned outputId, const unsigned typeId);
-        unsigned needs(const unsigned inputId, const unsigned typeId);
+        unsigned provides(const unsigned algorithmId, const unsigned outputId);
+        unsigned needs(const unsigned algorithmId, const unsigned inputId);
 
         // I/O & Dependencies
+        // RULE: I dependsOn O -> I is-a Input, O is-a Output
         unsigned depends(const unsigned inputId, const unsigned outputId);
+
+    protected:
+        // Returns the id of an representative of the classes
+        unsigned algorithmConcept();
+        unsigned interfaceConcept();
+        unsigned inputConcept();
+        unsigned outputConcept();
+
+        // The sets holding the different concepts of the domain
+        Hyperedges _algorithms;
+        Hyperedges _interfaces;
+        Hyperedges _inputs;
+        Hyperedges _outputs;
 };
 
 }

@@ -3,202 +3,210 @@
 namespace Software {
 
 
-// Type
-const std::string Type::superclassLabel = "Type";
-
 // Interface
-const std::string Interface::superclassLabel = "SoftwareInterface";
-
+const std::string Graph::InterfaceLabel = "SoftwareInterface";
 // Input
-const std::string Input::superclassLabel = "Input";
-
-unsigned Input::needs(Graph* graph, const unsigned typeId)
-{
-    return graph->needs(id(), typeId);
-}
-
-unsigned Input::depends(Graph* graph, const unsigned outputId)
-{
-    return graph->needs(id(), outputId);
-}
-
+const std::string Graph::InputLabel = "Input";
 // Output
-const std::string Output::superclassLabel = "Output";
-
-unsigned Output::provides(Graph* graph, const unsigned typeId)
-{
-    return graph->needs(id(), typeId);
-}
-
+const std::string Graph::OutputLabel = "Output";
 // Algorithm
-const std::string Algorithm::superclassLabel = "Algorithm";
-
-// Algorithms & Interfaces
-unsigned Algorithm::has(Graph* graph, const unsigned interfaceId)
-{
-    return graph->has(id(), interfaceId);
-}
+const std::string Graph::AlgorithmLabel = "Algorithm";
 
 // GRAPH STUFF
-
 Graph::Graph()
 {
+}
+
+Graph::Graph(Conceptgraph& A)
+: Conceptgraph(A)
+{
+    // We have to search the underlying concept graph and sort everything into 3 sets
+    // A <-- ISA --> DeviceLabel means that A is to be inserted into _devices set
+    Hyperedges candidates = Conceptgraph::find(Graph::AlgorithmLabel);
+    for (unsigned candidateId : candidates)
+    {
+        // We now have access to all ROOT NODES: traverse the subgraph spanned by IS-A relations and add every hedge to the corresponding set
+        // This means that we have to go in opposite direction of the IS-A relation
+        Hyperedges algorithms = traverse(candidateId, "", "IS-A", UP);
+        _algorithms.insert(algorithms.begin(), algorithms.end());
+    }
+    // Handle interface concept
+    candidates = Conceptgraph::find(Graph::InterfaceLabel);
+    for (unsigned candidateId : candidates)
+    {
+        // We now have access to all ROOT NODES: traverse the subgraph spanned by IS-A relations and add every hedge to the corresponding set
+        Hyperedges interfaces = traverse(candidateId, "", "IS-A", UP);
+        _interfaces.insert(interfaces.begin(), interfaces.end());
+    }
+    // Handle input concept
+    candidates = Conceptgraph::find(Graph::InputLabel);
+    for (unsigned candidateId : candidates)
+    {
+        // We now have access to all ROOT NODES: traverse the subgraph spanned by IS-A relations and add every hedge to the corresponding set
+        Hyperedges inputs = traverse(candidateId, "", "IS-A", UP);
+        _inputs.insert(inputs.begin(), inputs.end());
+    }
+    // Handle output concept
+    candidates = Conceptgraph::find(Graph::OutputLabel);
+    for (unsigned candidateId : candidates)
+    {
+        // We now have access to all ROOT NODES: traverse the subgraph spanned by IS-A relations and add every hedge to the corresponding set
+        Hyperedges outputs = traverse(candidateId, "", "IS-A", UP);
+        _outputs.insert(outputs.begin(), outputs.end());
+    }
+    // Now we have sorted everything ... maybe we should have this also as a reparse function?
 }
 
 Graph::~Graph()
 {
 }
 
-unsigned Graph::algorithmClass()
+unsigned Graph::algorithmConcept()
 {
-    return getClass(Algorithm::superclassLabel);
-}
-
-unsigned Graph::interfaceClass()
-{
-    return getClass(Interface::superclassLabel);
-}
-
-unsigned Graph::inputClass()
-{
-    auto superId = getClass(Input::superclassLabel);
-    relateTo(superId, interfaceClass(), Relation::isALabel);
-    return superId;
-}
-
-unsigned Graph::outputClass()
-{
-    auto superId = getClass(Output::superclassLabel);
-    relateTo(superId, interfaceClass(), Relation::isALabel);
-    return superId;
-}
-
-unsigned Graph::typeClass()
-{
-    return getClass(Type::superclassLabel);
-}
-
-unsigned Graph::algorithms()
-{
-    // FIXME: This is at least problematic. If we do not make sure, that we only have one representative, then we might produce inconsistent queries here
-    auto superSets = find(Algorithm::superclassLabel);
-    unsigned relId = Hypergraph::create("DUMMY RELATION");
-    for (auto superId : superSets)
+    // TODO: This could be a nice method at concept graph level (named findOrCreate(label))
+    unsigned id;
+    Hyperedges candidates = Conceptgraph::find(Graph::AlgorithmLabel);
+    if (candidates.size())
     {
-        // For each of the superSets we have to get the instances
-        // and merge the results
-        auto otherId = superclassOf(superId); // Reads: superId -- superclassOf --> ?
-        auto nextId  = Hypergraph::unite(relId, otherId);
-        Hypergraph::destroy(relId);
-        relId = nextId;
+        id = *candidates.begin();
+    } else {
+        id = Conceptgraph::create(Graph::AlgorithmLabel);
     }
-    auto members = Hypergraph::get(relId)->pointingTo();
-    Hypergraph::destroy(relId);
-    return create(members, "Algorithms");
+    return id;
 }
 
-unsigned Graph::interfaces()
+unsigned Graph::interfaceConcept()
 {
-    // FIXME: This is at least problematic. If we do not make sure, that we only have one representative, then we might produce inconsistent queries here
-    auto superSets = find(Interface::superclassLabel);
-    unsigned relId = Hypergraph::create("DUMMY RELATION");
-    for (auto superId : superSets)
+    // TODO: This could be a nice method at concept graph level (named findOrCreate(label))
+    unsigned id;
+    Hyperedges candidates = Conceptgraph::find(Graph::InterfaceLabel);
+    if (candidates.size())
     {
-        // For each of the superSets we have to get the instances
-        // and merge the results
-        auto otherId = superclassOf(superId); // Reads: superId -- superclassOf --> ?
-        auto nextId  = Hypergraph::unite(relId, otherId);
-        Hypergraph::destroy(relId);
-        relId = nextId;
+        id = *candidates.begin();
+    } else {
+        id = Conceptgraph::create(Graph::InterfaceLabel);
     }
-    auto members = Hypergraph::get(relId)->pointingTo();
-    Hypergraph::destroy(relId);
-    return create(members, "Interfaces");
+    return id;
 }
 
-unsigned Graph::inputs()
+unsigned Graph::inputConcept()
 {
-    // FIXME: This is at least problematic. If we do not make sure, that we only have one representative, then we might produce inconsistent queries here
-    auto superSets = find(Input::superclassLabel);
-    unsigned relId = Hypergraph::create("DUMMY RELATION");
-    for (auto superId : superSets)
+    // TODO: This could be a nice method at concept graph level (named findOrCreate(label))
+    unsigned id;
+    Hyperedges candidates = Conceptgraph::find(Graph::InputLabel);
+    if (candidates.size())
     {
-        // For each of the superSets we have to get the instances
-        // and merge the results
-        auto otherId = superclassOf(superId); // Reads: superId -- superclassOf --> ?
-        auto nextId  = Hypergraph::unite(relId, otherId);
-        Hypergraph::destroy(relId);
-        relId = nextId;
+        id = *candidates.begin();
+    } else {
+        id = Conceptgraph::create(Graph::InputLabel);
     }
-    auto members = Hypergraph::get(relId)->pointingTo();
-    Hypergraph::destroy(relId);
-    return create(members, "Inputs");
+    return id;
 }
 
-unsigned Graph::outputs()
+unsigned Graph::outputConcept()
 {
-    // FIXME: This is at least problematic. If we do not make sure, that we only have one representative, then we might produce inconsistent queries here
-    auto superSets = find(Output::superclassLabel);
-    unsigned relId = Hypergraph::create("DUMMY RELATION");
-    for (auto superId : superSets)
+    // TODO: This could be a nice method at concept graph level (named findOrCreate(label))
+    unsigned id;
+    Hyperedges candidates = Conceptgraph::find(Graph::OutputLabel);
+    if (candidates.size())
     {
-        // For each of the superSets we have to get the instances
-        // and merge the results
-        auto otherId = superclassOf(superId); // Reads: superId -- superclassOf --> ?
-        auto nextId  = Hypergraph::unite(relId, otherId);
-        Hypergraph::destroy(relId);
-        relId = nextId;
+        id = *candidates.begin();
+    } else {
+        id = Conceptgraph::create(Graph::OutputLabel);
     }
-    auto members = Hypergraph::get(relId)->pointingTo();
-    Hypergraph::destroy(relId);
-    return create(members, "Outputs");
+    return id;
 }
 
-unsigned Graph::types()
+Hypergraph::Hyperedges Graph::algorithms(const std::string& name)
 {
-    // FIXME: This is at least problematic. If we do not make sure, that we only have one representative, then we might produce inconsistent queries here
-    auto superSets = find(Type::superclassLabel);
-    unsigned relId = Hypergraph::create("DUMMY RELATION");
-    for (auto superId : superSets)
+    Hyperedges result;
+    for (auto id : _algorithms)
     {
-        // For each of the superSets we have to get the instances
-        // and merge the results
-        auto otherId = superclassOf(superId); // Reads: superId -- superclassOf --> ?
-        auto nextId  = Hypergraph::unite(relId, otherId);
-        Hypergraph::destroy(relId);
-        relId = nextId;
+        if (name.empty() || (name == get(id)->label()))
+        {
+            result.insert(id);
+        }
     }
-    auto members = Hypergraph::get(relId)->pointingTo();
-    Hypergraph::destroy(relId);
-    return create(members, "Types");
+    return result;
+}
+
+Hypergraph::Hyperedges Graph::interfaces(const std::string& name)
+{
+    Hyperedges result;
+    for (auto id : _interfaces)
+    {
+        if (name.empty() || (name == get(id)->label()))
+        {
+            result.insert(id);
+        }
+    }
+    return result;
+}
+
+Hypergraph::Hyperedges Graph::inputs(const std::string& name)
+{
+    Hyperedges result;
+    for (auto id : _inputs)
+    {
+        if (name.empty() || (name == get(id)->label()))
+        {
+            result.insert(id);
+        }
+    }
+    return result;
+}
+
+Hypergraph::Hyperedges Graph::outputs(const std::string& name)
+{
+    Hyperedges result;
+    for (auto id : _outputs)
+    {
+        if (name.empty() || (name == get(id)->label()))
+        {
+            result.insert(id);
+        }
+    }
+    return result;
 }
 
 unsigned Graph::createAlgorithm(const std::string& name)
 {
-    auto id = create(name);
-    relateTo(id, algorithmClass(), Relation::isALabel);
-    return id;
+    // Find the concept
+    unsigned A = algorithmConcept();
+    unsigned a = create(name);
+    relate(a, A, "IS-A"); // TODO: This should be in a base class
+    _algorithms.insert(a);
+    return a;
 }
 
 unsigned Graph::createInput(const std::string& name)
 {
-    auto id = create(name);
-    relateTo(id, inputClass(), Relation::isALabel);
-    return id;
+    // Find the concept
+    unsigned A = inputConcept();
+    unsigned a = create(name);
+    relate(a, A, "IS-A"); // TODO: This should be in a base class
+    _inputs.insert(a);
+    return a;
 }
 
 unsigned Graph::createOutput(const std::string& name)
 {
-    auto id = create(name);
-    relateTo(id, outputClass(), Relation::isALabel);
-    return id;
+    // Find the concept
+    unsigned A = outputConcept();
+    unsigned a = create(name);
+    relate(a, A, "IS-A"); // TODO: This should be in a base class
+    _outputs.insert(a);
+    return a;
 }
 
-unsigned Graph::createType(const std::string& name)
+unsigned Graph::createInterface(const std::string& name)
 {
-    auto id = create(name);
-    relateTo(id, typeClass(), Relation::isALabel);
-    return id;
+    // Find the concept
+    unsigned A = interfaceConcept();
+    unsigned a = create(name);
+    relate(a, A, "IS-A"); // TODO: This should be in a base class
+    _interfaces.insert(a);
+    return a;
 }
 
 unsigned Graph::has(const unsigned algorithmId, const unsigned interfaceId)
@@ -206,32 +214,37 @@ unsigned Graph::has(const unsigned algorithmId, const unsigned interfaceId)
     // Either we
     // * check if algorithmId -- isA --> algorithm
     // * or, we imply algorithmId -- isA --> algorithm
-    // For now, we follow the second approach (although this ALWAYS creates a new relation!!!)
-    relateTo(algorithmId, algorithmClass(), Relation::isALabel);
-    relateTo(interfaceId, interfaceClass(), Relation::isALabel);
-    return relateTo(algorithmId, interfaceId, Relation::hasLabel);
+    // This is the first approach
+    if (_algorithms.count(algorithmId) && _interfaces.count(interfaceId))
+    {
+        return relate(algorithmId, interfaceId, "HAS"); // TODO: This relation label should be in a base class/dictionary
+    }
+    return 0;
 }
 
-unsigned Graph::provides(const unsigned outputId, const unsigned typeId)
+unsigned Graph::provides(const unsigned algorithmId, const unsigned outputId)
 {
     // Either we
     // * check if outputId -- isA --> output
     // * or, we imply outputId -- isA --> output
-    // For now, we follow the second approach (although this ALWAYS creates a new relation!!!)
-    relateTo(outputId, outputClass(), Relation::isALabel);
-    relateTo(typeId, typeClass(), Relation::isALabel);
-    return relateTo(outputId, typeId, "provides"); // TODO: This should be registered somewhere...Actually it is some form of isA, right?
+    // This is the first approach
+    if (_algorithms.count(algorithmId) && _outputs.count(outputId))
+    {
+        return relate(algorithmId, outputId, "PROVIDES"); // TODO: This relation label should be in a base class/dictionary
+    }
+    return 0;
 }
 
-unsigned Graph::needs(const unsigned inputId, const unsigned typeId)
+unsigned Graph::needs(const unsigned algorithmId, const unsigned inputId)
 {
     // Either we
     // * check if inputId -- isA --> input
     // * or, we imply inputId -- isA --> input
-    // For now, we follow the second approach (although this ALWAYS creates a new relation!!!)
-    relateTo(inputId, inputClass(), Relation::isALabel);
-    relateTo(typeId, typeClass(), Relation::isALabel);
-    return relateTo(inputId, typeId, "needs"); // TODO: This should be registered somewhere...Actually it is some form of isA, right?
+    if (_algorithms.count(algorithmId) && _inputs.count(inputId))
+    {
+        return relate(algorithmId, inputId, "PROVIDES"); // TODO: This relation label should be in a base class/dictionary
+    }
+    return 0;
 }
 
 unsigned Graph::depends(const unsigned inputId, const unsigned outputId)
@@ -239,10 +252,12 @@ unsigned Graph::depends(const unsigned inputId, const unsigned outputId)
     // Either we
     // * check if inputId -- isA --> input
     // * or, we imply inputId -- isA --> input
-    // For now, we follow the second approach (although this ALWAYS creates a new relation!!!)
-    relateTo(inputId, inputClass(), Relation::isALabel);
-    relateTo(outputId, outputClass(), Relation::isALabel);
-    return relateTo(inputId, outputId, "depends"); // TODO: This should be registered somewhere...Actually it is some form of connectedTo, right?
+    // This is the first approach
+    if (_inputs.count(inputId) && _outputs.count(outputId))
+    {
+        return relate(inputId, outputId, "DEPENDS"); // TODO: This relation label should be in a base class/dictionary
+    }
+    return 0;
 }
 
 }

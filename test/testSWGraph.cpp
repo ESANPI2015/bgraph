@@ -19,34 +19,34 @@ int main(void)
     std::cout << "Second id: " << secondId << "\n";
 
     std::cout << "> Assign input to algorithm\n";
-    swgraph.has(firstId, secondId);
+    swgraph.needs(firstId, secondId);
 
     std::cout << "> Create & Assign others\n";
-    swgraph.has(firstId, swgraph.createInput("right"));
-    swgraph.has(firstId, swgraph.createOutput("disparity"));
+    swgraph.needs(firstId, swgraph.createInput("right"));
+    swgraph.provides(firstId, swgraph.createOutput("disparity"));
 
-    std::cout << "> Create type\n";
-    auto typeId = swgraph.createType("Image");
+    std::cout << "> Create interface\n";
+    auto imageId = swgraph.createInterface("Image");
 
     std::cout << "> Query inputs\n";
-    for (auto inputId : swgraph.get(swgraph.inputs())->members(&swgraph)) // TODO: Nasty!
+    for (auto inputId : swgraph.inputs())
     {
         std::cout << "Input " << swgraph.get(inputId)->label() << "\n";
-        swgraph.needs(inputId, typeId);
+        //swgraph.has(inputId, typeId);
     }
 
     std::cout << "> Query outputs\n";
-    for (auto outputId : swgraph.get(swgraph.outputs())->members(&swgraph)) // TODO: Nasty!
+    for (auto outputId : swgraph.outputs())
     {
-        std::cout << "Input " << swgraph.get(outputId)->label() << "\n";
-        swgraph.provides(outputId, typeId);
+        std::cout << "Output " << swgraph.get(outputId)->label() << "\n";
+        //swgraph.provides(outputId, typeId);
     }
     
-    std::cout << "> All sets" << std::endl;
-    auto sets = swgraph.find();
-    for (auto setId : sets)
+    std::cout << "> All concepts" << std::endl;
+    auto concepts = swgraph.find();
+    for (auto conceptId : concepts)
     {
-        std::cout << setId << " " << swgraph.get(setId)->label() << std::endl;
+        std::cout << conceptId << " " << swgraph.get(conceptId)->label() << std::endl;
     }
 
     std::cout << "> Store swgraph using YAML" << std::endl;
