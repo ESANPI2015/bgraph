@@ -44,22 +44,31 @@ class Graph;
 class Graph : public Conceptgraph
 {
     public:
-        // Labels for identifiing the main concepts
-        static const std::string AlgorithmLabel;
-        static const std::string InterfaceLabel;
-        static const std::string InputLabel;
-        static const std::string OutputLabel;
+        // Identifiers for the main concepts
+        static const unsigned AlgorithmId;
+        static const unsigned InterfaceId;
+        static const unsigned InputId;
+        static const unsigned OutputId;
+        // Ids for identifiing IsA, HasA and Connects
+        static const unsigned IsAId;
+        static const unsigned HasAId;
+        static const unsigned NeedsId;
+        static const unsigned ProvidesId;
+        static const unsigned DependsOnId;
 
         // Constructor/Destructor
         Graph();
         Graph(Conceptgraph& A);
         ~Graph();
 
+        // Generates the dictionary
+        void createMainConcepts();
+
         // Factory functions
         unsigned createAlgorithm(const std::string& name="Algorithm");
         unsigned createInterface(const std::string& name="Interface");
-        unsigned createInput(const std::string& name="Input");
-        unsigned createOutput(const std::string& name="Output");
+        unsigned createInput(const unsigned interfaceId, const std::string& name="Input");
+        unsigned createOutput(const unsigned interfaceId, const std::string& name="Output");
 
         // Queries
         // NOTE: Return true sets whose members are all of the same type/superclass
@@ -79,19 +88,6 @@ class Graph : public Conceptgraph
         // I/O & Dependencies
         // RULE: I dependsOn O -> I is-a Input, O is-a Output
         unsigned depends(const unsigned inputId, const unsigned outputId);
-
-    protected:
-        // Returns the id of an representative of the classes
-        unsigned algorithmConcept();
-        unsigned interfaceConcept();
-        unsigned inputConcept();
-        unsigned outputConcept();
-
-        // The sets holding the different concepts of the domain
-        Hyperedges _algorithms;
-        Hyperedges _interfaces;
-        Hyperedges _inputs;
-        Hyperedges _outputs;
 };
 
 }
