@@ -27,6 +27,7 @@ int main(void)
     std::cout << "> Create & Assign others\n";
     swgraph.needs(firstId, swgraph.createInput(imageId, "right"));
     swgraph.provides(firstId, swgraph.createOutput(imageId, "disparity"));
+    swgraph.has(firstId, imageId);
 
     std::cout << "> Query inputs\n";
     for (auto inputId : swgraph.inputs())
@@ -38,6 +39,12 @@ int main(void)
     for (auto outputId : swgraph.outputs())
     {
         std::cout << "Output " << swgraph.get(outputId)->label() << "\n";
+    }
+
+    std::cout << "> Query interfaces\n";
+    for (auto interfaceId : swgraph.interfaces())
+    {
+        std::cout << "Interface " << swgraph.get(interfaceId)->label() << "\n";
     }
     
     std::cout << "> All concepts" << std::endl;
