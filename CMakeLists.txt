@@ -50,10 +50,10 @@ target_link_libraries(testSWGraph swgraph)
 install(TARGETS testSWGraph
 RUNTIME DESTINATION bin)
 
-#add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
-#target_link_libraries(gen_cpp_class swgraph)
-#install(TARGETS gen_cpp_class
-#RUNTIME DESTINATION bin)
+add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
+target_link_libraries(gen_cpp_class swgraph)
+install(TARGETS gen_cpp_class
+RUNTIME DESTINATION bin)
 
 # pkg-config, to be installed:
 configure_file(${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
