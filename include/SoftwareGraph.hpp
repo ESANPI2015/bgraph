@@ -26,8 +26,10 @@ namespace Software {
     ALGORITHM <-- realizes -- IMPLEMENTATION -- expressedIn --> LANGUAGE
     INTERFACE <-- realizes -- DATATYPE -- expressedIn --> LANGUAGE
     IMPLEMENTATION -- uses --> DATATYPE
-    (IMPLEMENTATION -- dependsOn --> IMPLEMENTATION)
-    (LANGUAGE -- has --> COMPILER)
+    (IMPLEMENTATION -- dependsOn --> IMPLEMENTATION)    optional, not needed yet
+    (LANGUAGE -- has --> COMPILER)                      optional, not needed yet
+    (IMPLEMENTATION -- needs --> INPUT)                 redundant
+    (IMPLEMENTATION -- provides --> OUTPUT)             redundant
 
     If some X is a ALGORITHM then there exists a path of IS-A relations from X to ALGORITHM
 
@@ -53,13 +55,6 @@ namespace Software {
 
 class Graph;
 
-/*
-    CONSISTENCY CHECKS
-    - Only one type / input,output,parameter
-    - Either having parameters OR bidirectional interfaces (but not both?)
-    - Types should be trees but not DAGs (?)
-    - A dependency between input and output implies that their types match/are compatible
-*/
 class Graph : public Conceptgraph
 {
     public:
@@ -71,7 +66,8 @@ class Graph : public Conceptgraph
         static const unsigned ImplementationId;
         static const unsigned LanguageId;
         static const unsigned DatatypeId;
-        // Ids for identifiing IsA, HasA and Connects
+
+        // Ids for identifiing main relations
         static const unsigned IsAId;
         static const unsigned HasAId;
         static const unsigned NeedsId;

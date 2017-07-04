@@ -4,22 +4,22 @@ namespace Software {
 
 
 // Concept Ids
-const unsigned Graph::InterfaceId = 2001;
-const unsigned Graph::InputId = 2002;
-const unsigned Graph::OutputId = 2003;
-const unsigned Graph::AlgorithmId = 2000;
-const unsigned Graph::ImplementationId = 2004;
-const unsigned Graph::DatatypeId = 2005;
-const unsigned Graph::LanguageId = 2006;
+const unsigned Graph::InterfaceId       = 2001;
+const unsigned Graph::InputId           = 2002;
+const unsigned Graph::OutputId          = 2003;
+const unsigned Graph::AlgorithmId       = 2000;
+const unsigned Graph::ImplementationId  = 2004;
+const unsigned Graph::DatatypeId        = 2005;
+const unsigned Graph::LanguageId        = 2006;
 // Relation Ids
-const unsigned Graph::IsAId       = 11;
-const unsigned Graph::HasAId      = 22;
-const unsigned Graph::DependsOnId = 44;
-const unsigned Graph::NeedsId     = 55;
-const unsigned Graph::ProvidesId  = 66;
-const unsigned Graph::ExpressedInId = 77;
-const unsigned Graph::RealizesId  = 88;
-const unsigned Graph::UsesId      = 99;
+const unsigned Graph::IsAId             = 11;
+const unsigned Graph::HasAId            = 22;
+const unsigned Graph::DependsOnId       = 44;
+const unsigned Graph::NeedsId           = 55;
+const unsigned Graph::ProvidesId        = 66;
+const unsigned Graph::ExpressedInId     = 77;
+const unsigned Graph::RealizesId        = 88;
+const unsigned Graph::UsesId            = 99;
 
 // GRAPH STUFF
 void Graph::createMainConcepts()
