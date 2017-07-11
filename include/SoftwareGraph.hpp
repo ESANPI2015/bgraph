@@ -24,8 +24,8 @@ namespace Software {
     INPUT -- dependsOn --> OUTPUT
 
     ALGORITHM <-- realizes -- IMPLEMENTATION -- expressedIn --> LANGUAGE
-    INTERFACE <-- realizes -- DATATYPE -- expressedIn --> LANGUAGE
-    IMPLEMENTATION -- uses --> DATATYPE
+    INTERFACE <-- represents -- DATATYPE -- expressedIn --> LANGUAGE
+    (IMPLEMENTATION -- uses --> DATATYPE)               questionable
     (IMPLEMENTATION -- dependsOn --> IMPLEMENTATION)    optional, not needed yet
     (LANGUAGE -- has --> COMPILER)                      optional, not needed yet
     (IMPLEMENTATION -- needs --> INPUT)                 redundant
@@ -38,22 +38,12 @@ namespace Software {
         |---------- realizes -- disparity.c -- expressedIn --> C
         v
     DisparityMap -- needs --> left -- is-a --> Input
-      | |                       |---- is-a --> Image <-- realizes -- uint8_t[MAX_X][MAX_Y] -- expressedIn --> C
+      | |                       |---- is-a --> Image <-- represents -- uint8_t[MAX_X][MAX_Y] -- expressedIn --> C
       | |---------- needs --> right ...
       |------------ provides --> disparity ...
 
     NOTE: When merging with the concept of Finite State Machines, this whole thing would become an even whiter box :)
-    
-    Open questions:
-    * Does it makes sense to have 1-1, 1-N, N-1 and N-M versions of the relations?
-    * Does it makes sense to use (N*1-1) and (N*1-M) versions of the N-1,N-M relations?
-    * Would it be better to just use SIMPLE 2-hyperedges for the relations (everything based on 1-1 relations)?
-      NOTE: This would better fit to databases with fixed tables like ID -> (ID, ID)
-    * How are the constraints on AGGREGATION (has)? Or, can an interface be owned by only one device?
-    * Should we introduce intermediate concepts like Ownership(has) or others which are shared amongst other domains?
 */
-
-class Graph;
 
 class Graph : public Conceptgraph
 {
@@ -75,7 +65,8 @@ class Graph : public Conceptgraph
         static const unsigned DependsOnId;
         static const unsigned ExpressedInId;
         static const unsigned RealizesId;
-        static const unsigned UsesId;
+        static const unsigned RepresentsId;
+        //static const unsigned UsesId;
 
         // Constructor/Destructor
         Graph();
@@ -113,12 +104,14 @@ class Graph : public Conceptgraph
         // I/O & Dependencies
         // RULE: I dependsOn O -> I is-a Input, O is-a Output
         unsigned depends(const unsigned inputId, const unsigned outputId);
-        // Algorithm/Interface & Implementation/Datatype
-        unsigned realizes(const unsigned implementationOrDatatypeId, const unsigned algorithmOrInterfaceId);
+        // Algorithm & Implementation
+        unsigned realizes(const unsigned implementationId, const unsigned algorithmId);
+        // Interface & Datatype
+        unsigned represents(const unsigned datatypeId, const unsigned interfaceId);
         // Implementation/Datatype & Language
         unsigned expressedIn(const unsigned implementationOrDatatypeId, const unsigned languageId);
         // Implementation & Datatype
-        unsigned uses(const unsigned implementationId, const unsigned datatypeId);
+        //unsigned uses(const unsigned implementationId, const unsigned datatypeId);
 };
 
 }

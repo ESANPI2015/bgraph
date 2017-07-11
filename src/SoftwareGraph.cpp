@@ -12,18 +12,20 @@ const unsigned Graph::ImplementationId  = 2004;
 const unsigned Graph::DatatypeId        = 2005;
 const unsigned Graph::LanguageId        = 2006;
 // Relation Ids
-const unsigned Graph::IsAId             = 11;
-const unsigned Graph::HasAId            = 22;
-const unsigned Graph::DependsOnId       = 44;
-const unsigned Graph::NeedsId           = 55;
-const unsigned Graph::ProvidesId        = 66;
-const unsigned Graph::ExpressedInId     = 77;
-const unsigned Graph::RealizesId        = 88;
-const unsigned Graph::UsesId            = 99;
+const unsigned Graph::IsAId             = 2100;
+const unsigned Graph::HasAId            = 2101;
+const unsigned Graph::DependsOnId       = 2102;
+const unsigned Graph::NeedsId           = 2103;
+const unsigned Graph::ProvidesId        = 2104;
+const unsigned Graph::ExpressedInId     = 2105;
+const unsigned Graph::RealizesId        = 2106;
+//const unsigned Graph::UsesId            = 2107;
+const unsigned Graph::RepresentsId      = 2108;
 
 // GRAPH STUFF
 void Graph::createMainConcepts()
 {
+    // Concepts
     Conceptgraph::create(Graph::AlgorithmId, "ALGORITHM");
     Conceptgraph::create(Graph::InterfaceId, "INTERFACE");
     Conceptgraph::create(Graph::InputId, "INPUT");
@@ -31,18 +33,17 @@ void Graph::createMainConcepts()
     Conceptgraph::create(Graph::ImplementationId, "IMPLEMENTATION");
     Conceptgraph::create(Graph::DatatypeId, "DATATYPE");
     Conceptgraph::create(Graph::LanguageId, "LANGUAGE");
-    // FIXME: The following concepts should be relations not concepts ... or?
-    //Conceptgraph::defineRelation(Graph::HasAId, "IS-A", Graph::AlgorithmId, Graph::InterfaceId);
-    //When stating a fact, we should do this (it will also instantiate from MASTER HAS-A)
-    //Conceptgraph::relate(algorithmId, interfaceId, Graph::HasAId);
-    Conceptgraph::create(Graph::IsAId, "IS-A");
-    Conceptgraph::create(Graph::HasAId, "HAS-A");
-    Conceptgraph::create(Graph::DependsOnId, "DEPENDS-ON");
-    Conceptgraph::create(Graph::NeedsId, "NEEDS");
-    Conceptgraph::create(Graph::ProvidesId, "PROVIDES");
-    Conceptgraph::create(Graph::ExpressedInId, "EXPRESSED-IN");
-    Conceptgraph::create(Graph::RealizesId, "REALIZES");
-    Conceptgraph::create(Graph::UsesId, "USES");
+    // Relations
+    Conceptgraph::relate(Graph::IsAId, 1, 1, "IS-A");
+    Conceptgraph::relate(Graph::HasAId, Graph::AlgorithmId, Graph::InterfaceId, "HAS-A");
+    Conceptgraph::relate(Graph::DependsOnId, Graph::InputId, Graph::OutputId, "DEPENDS-ON");
+    Conceptgraph::relate(Graph::NeedsId, Graph::AlgorithmId, Graph::InputId, "NEEDS");
+    Conceptgraph::relate(Graph::ProvidesId, Graph::AlgorithmId, Graph::OutputId, "PROVIDES");
+    Conceptgraph::relate(Graph::ExpressedInId, Graph::ImplementationId, Graph::LanguageId, "EXPRESSED-IN");
+    Conceptgraph::get(Graph::ExpressedInId)->from(Graph::DatatypeId); // OK :)
+    Conceptgraph::relate(Graph::RealizesId, Graph::ImplementationId, Graph::AlgorithmId, "REALIZES");
+    Conceptgraph::relate(Graph::RepresentsId, Graph::DatatypeId, Graph::InterfaceId, "REPRESENTS");
+    //Conceptgraph::relate(Graph::UsesId, Graph::ImplementationId, Graph::DatatypeId, "USES"); // TODO: This is a questionable relation...
 }
 
 Graph::Graph()
@@ -120,7 +121,7 @@ unsigned Graph::createAlgorithm(const std::string& name)
 {
     createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::AlgorithmId, get(Graph::IsAId)->label());
+    relate(a, Graph::AlgorithmId, Graph::IsAId);
     return a;
 }
 
@@ -128,8 +129,8 @@ unsigned Graph::createInput(const unsigned interfaceId, const std::string& name)
 {
     createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::InputId, get(Graph::IsAId)->label());
-    relate(a, interfaceId, get(Graph::IsAId)->label());
+    relate(a, Graph::InputId, Graph::IsAId);
+    relate(a, interfaceId, Graph::IsAId);
     return a;
 }
 
@@ -137,8 +138,8 @@ unsigned Graph::createOutput(const unsigned interfaceId, const std::string& name
 {
     createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::OutputId, get(Graph::IsAId)->label());
-    relate(a, interfaceId, get(Graph::IsAId)->label());
+    relate(a, Graph::OutputId, Graph::IsAId);
+    relate(a, interfaceId, Graph::IsAId);
     return a;
 }
 
@@ -146,7 +147,7 @@ unsigned Graph::createInterface(const std::string& name)
 {
     createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::InterfaceId, get(Graph::IsAId)->label());
+    relate(a, Graph::InterfaceId, Graph::IsAId);
     return a;
 }
 
@@ -154,7 +155,7 @@ unsigned Graph::createImplementation(const std::string& name)
 {
     createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::ImplementationId, get(Graph::IsAId)->label());
+    relate(a, Graph::ImplementationId, Graph::IsAId);
     return a;
 }
 
@@ -162,7 +163,7 @@ unsigned Graph::createDatatype(const std::string& name)
 {
     createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::DatatypeId, get(Graph::IsAId)->label());
+    relate(a, Graph::DatatypeId, Graph::IsAId);
     return a;
 }
 
@@ -170,7 +171,7 @@ unsigned Graph::createLanguage(const std::string& name)
 {
     createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::LanguageId, get(Graph::IsAId)->label());
+    relate(a, Graph::LanguageId, Graph::IsAId);
     return a;
 }
 
@@ -178,7 +179,7 @@ unsigned Graph::has(const unsigned algorithmId, const unsigned interfaceId)
 {
     if (algorithms().count(algorithmId) && interfaces().count(interfaceId))
     {
-        return relate(algorithmId, interfaceId, get(Graph::HasAId)->label());
+        return relate(algorithmId, interfaceId, Graph::HasAId);
     }
     return 0;
 }
@@ -187,7 +188,7 @@ unsigned Graph::provides(const unsigned algorithmId, const unsigned outputId)
 {
     if (algorithms().count(algorithmId) && outputs().count(outputId))
     {
-        return relate(algorithmId, outputId, get(Graph::ProvidesId)->label());
+        return relate(algorithmId, outputId, Graph::ProvidesId);
     }
     return 0;
 }
@@ -196,7 +197,7 @@ unsigned Graph::needs(const unsigned algorithmId, const unsigned inputId)
 {
     if (algorithms().count(algorithmId) && inputs().count(inputId))
     {
-        return relate(algorithmId, inputId, get(Graph::NeedsId)->label());
+        return relate(algorithmId, inputId, Graph::NeedsId);
     }
     return 0;
 }
@@ -205,17 +206,25 @@ unsigned Graph::depends(const unsigned inputId, const unsigned outputId)
 {
     if (inputs().count(inputId) && outputs().count(outputId))
     {
-        return relate(inputId, outputId, get(Graph::DependsOnId)->label());
+        return relate(inputId, outputId, Graph::DependsOnId);
     }
     return 0;
 }
 
-unsigned Graph::realizes(const unsigned implementationOrDatatypeId, const unsigned algorithmOrInterfaceId)
+unsigned Graph::realizes(const unsigned implementationId, const unsigned algorithmId)
 {
-    if ((implementations().count(implementationOrDatatypeId) && algorithms().count(algorithmOrInterfaceId)) ||
-        (datatypes().count(implementationOrDatatypeId) && interfaces().count(algorithmOrInterfaceId)))
+    if (implementations().count(implementationId) && algorithms().count(algorithmId))
     {
-        return relate(implementationOrDatatypeId, algorithmOrInterfaceId, get(Graph::RealizesId)->label());
+        return relate(implementationId, algorithmId, Graph::RealizesId);
+    }
+    return 0;
+}
+
+unsigned Graph::represents(const unsigned datatypeId, const unsigned interfaceId)
+{
+    if (datatypes().count(datatypeId) && interfaces().count(interfaceId))
+    {
+        return relate(datatypeId, interfaceId, Graph::RepresentsId);
     }
     return 0;
 }
@@ -224,18 +233,18 @@ unsigned Graph::expressedIn(const unsigned implementationOrDatatypeId, const uns
 {
     if ((implementations().count(implementationOrDatatypeId) || datatypes().count(implementationOrDatatypeId)) && languages().count(languageId))
     {
-        return relate(implementationOrDatatypeId, languageId, get(Graph::ExpressedInId)->label());
+        return relate(implementationOrDatatypeId, languageId, Graph::ExpressedInId);
     }
     return 0;
 }
 
-unsigned Graph::uses(const unsigned implementationId, const unsigned datatypeId)
-{
-    if (implementations().count(implementationId) && datatypes().count(datatypeId))
-    {
-        return relate(implementationId, datatypeId, get(Graph::UsesId)->label());
-    }
-    return 0;
-}
+//unsigned Graph::uses(const unsigned implementationId, const unsigned datatypeId)
+//{
+//    if (implementations().count(implementationId) && datatypes().count(datatypeId))
+//    {
+//        return relate(implementationId, datatypeId, Graph::UsesId);
+//    }
+//    return 0;
+//}
 
 }
