@@ -16,7 +16,8 @@ int main(void)
     // Test case:
     auto hypergraph = YAML::LoadFile("swgraph.yml").as<Hypergraph*>();
     Conceptgraph cgraph(*hypergraph);
-    Software::Graph swgraph(cgraph);
+    CommonConceptGraph ccgraph(cgraph);
+    Software::Graph swgraph(ccgraph);
     // Get all algorithms
     auto algorithms = swgraph.algorithms();
     // For each of these algorithms
@@ -27,14 +28,8 @@ int main(void)
         result << "// Algorithm to C++ generator\n";
         result << "class " << algorithm->label() << " {\n";
         result << "\tpublic:\n";
-        // Get all interfaces
-        auto allInterfaceIds = swgraph.interfaces();
-        // Get all "HAS" relations of device
-        auto allHasRelationsOfAlg = swgraph.relationsOf(algorithmId, swgraph.get(Software::Graph::HasAId)->label());
-        // Get all the concepts the "HAS" relations point to
-        auto allChildrenOfAlg = swgraph.to(allHasRelationsOfAlg);
-        // The interfaces of the device are in the intersection of allInterfaceIds and allChildrenOfDev
-        auto myInterfaceIds = swgraph.intersect(allInterfaceIds, allChildrenOfAlg);
+        // The interfaces of the device are in the intersection of allInterfaceIds and allChildrenOfDev TODO: without Inputs/Outputs
+        auto myInterfaceIds = swgraph.intersect(swgraph.interfaces(), swgraph.childrenOf(algorithmId));
         result << "\t\t// Generate interface types\n";
         for (auto interfaceId : myInterfaceIds)
         {
@@ -44,11 +39,11 @@ int main(void)
             result << "\t\ttypedef " << datatypeName << " " << interface->label() << ";\n";
         }
         // Handle Inputs
-        auto myInputIds = swgraph.to(swgraph.relationsOf(algorithmId, swgraph.get(Software::Graph::NeedsId)->label()));
+        auto myInputIds = swgraph.intersect(swgraph.inputs(), swgraph.childrenOf(algorithmId));
         result << "\n\t\t// Generate functions to retrieve input values\n";
         for (auto inputId : myInputIds)
         {
-            auto interfaceIds = swgraph.intersect(allInterfaceIds, swgraph.to(swgraph.relationsOf(inputId, swgraph.get(Software::Graph::IsAId)->label())));
+            auto interfaceIds = swgraph.intersect(swgraph.interfaces(), swgraph.to(swgraph.intersect(swgraph.relationsFrom(inputId),swgraph.factsOf(Software::Graph::IsAId)))); //superclassesOf
             std::string typeOfInput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {
@@ -62,11 +57,11 @@ int main(void)
             result << "\t\tbool read_" << swgraph.get(inputId)->label() << "(" << typeOfInput << "& value);\n";
         }
         // Handle Outputs
-        auto myOutputIds = swgraph.to(swgraph.relationsOf(algorithmId, swgraph.get(Software::Graph::ProvidesId)->label()));
+        auto myOutputIds = swgraph.intersect(swgraph.outputs(), swgraph.childrenOf(algorithmId));
         result << "\n\t\t// Generate functions to write output values\n";
         for (auto outputId : myOutputIds)
         {
-            auto interfaceIds = swgraph.intersect(allInterfaceIds, swgraph.to(swgraph.relationsOf(outputId, swgraph.get(Software::Graph::IsAId)->label())));
+            auto interfaceIds = swgraph.intersect(swgraph.interfaces(), swgraph.to(swgraph.intersect(swgraph.relationsFrom(outputId),swgraph.factsOf(Software::Graph::IsAId)))); //superclassesOf
             std::string typeOfOutput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {

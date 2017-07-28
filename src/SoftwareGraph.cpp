@@ -12,7 +12,7 @@ const unsigned Graph::ImplementationId  = 2004;
 const unsigned Graph::DatatypeId        = 2005;
 const unsigned Graph::LanguageId        = 2006;
 // Relation Ids
-const unsigned Graph::IsAId             = 2100;
+const unsigned Graph::IsAId             = CommonConceptGraph::IsAId;
 const unsigned Graph::HasAId            = 2101;
 const unsigned Graph::DependsOnId       = 2102;
 const unsigned Graph::NeedsId           = 2103;
@@ -33,15 +33,24 @@ void Graph::createMainConcepts()
     Conceptgraph::create(Graph::ImplementationId, "IMPLEMENTATION");
     Conceptgraph::create(Graph::DatatypeId, "DATATYPE");
     Conceptgraph::create(Graph::LanguageId, "LANGUAGE");
+
     // Relations
-    Conceptgraph::relate(Graph::IsAId, 1, 1, "IS-A");
     Conceptgraph::relate(Graph::HasAId, Graph::AlgorithmId, Graph::InterfaceId, "HAS-A");
+    CommonConceptGraph::subrelationOf(Graph::HasAId, CommonConceptGraph::HasAId);
+
     Conceptgraph::relate(Graph::DependsOnId, Graph::InputId, Graph::OutputId, "DEPENDS-ON");
+    CommonConceptGraph::subrelationOf(Graph::DependsOnId, CommonConceptGraph::ConnectsId);
+
     Conceptgraph::relate(Graph::NeedsId, Graph::AlgorithmId, Graph::InputId, "NEEDS");
+    CommonConceptGraph::subrelationOf(Graph::NeedsId, Graph::HasAId);
+
     Conceptgraph::relate(Graph::ProvidesId, Graph::AlgorithmId, Graph::OutputId, "PROVIDES");
+    CommonConceptGraph::subrelationOf(Graph::ProvidesId, Graph::HasAId);
+
+    // TODO: Are these relations subrelations of other, known relations?
     Conceptgraph::relate(Graph::ExpressedInId, Graph::ImplementationId, Graph::LanguageId, "EXPRESSED-IN");
     Conceptgraph::get(Graph::ExpressedInId)->from(Graph::DatatypeId); // OK :)
-    Conceptgraph::relate(Graph::RealizesId, Graph::ImplementationId, Graph::AlgorithmId, "REALIZES");
+    Conceptgraph::relate(Graph::RealizesId, Graph::ImplementationId, Graph::AlgorithmId, "REALIZES"); // Inverse of HAS-A?
     Conceptgraph::relate(Graph::RepresentsId, Graph::DatatypeId, Graph::InterfaceId, "REPRESENTS");
     //Conceptgraph::relate(Graph::UsesId, Graph::ImplementationId, Graph::DatatypeId, "USES"); // TODO: This is a questionable relation...
 }
@@ -51,8 +60,8 @@ Graph::Graph()
     createMainConcepts();
 }
 
-Graph::Graph(Conceptgraph& A)
-: Conceptgraph(A)
+Graph::Graph(CommonConceptGraph& A)
+: CommonConceptGraph(A)
 {
     createMainConcepts();
 }
@@ -63,115 +72,101 @@ Graph::~Graph()
 
 Hypergraph::Hyperedges Graph::algorithms(const std::string& name)
 {
-    Hyperedges result;
-    result = Conceptgraph::traverse(Graph::AlgorithmId, name, get(Graph::IsAId)->label(), UP);
+    Hyperedges result = CommonConceptGraph::subclassesOf(Graph::AlgorithmId, name);
     result.erase(Graph::AlgorithmId);
     return result;
 }
 
 Hypergraph::Hyperedges Graph::interfaces(const std::string& name)
 {
-    Hyperedges result;
-    result = Conceptgraph::traverse(Graph::InterfaceId, name, get(Graph::IsAId)->label(), UP);
+    Hyperedges result = CommonConceptGraph::subclassesOf(Graph::InterfaceId, name);
     result.erase(Graph::InterfaceId);
     return result;
 }
 
 Hypergraph::Hyperedges Graph::inputs(const std::string& name)
 {
-    Hyperedges result;
-    result = Conceptgraph::traverse(Graph::InputId, name, get(Graph::IsAId)->label(), UP);
+    Hyperedges result = CommonConceptGraph::subclassesOf(Graph::InputId, name);
     result.erase(Graph::InputId);
     return result;
 }
 
 Hypergraph::Hyperedges Graph::outputs(const std::string& name)
 {
-    Hyperedges result;
-    result = Conceptgraph::traverse(Graph::OutputId, name, get(Graph::IsAId)->label(), UP);
+    Hyperedges result = CommonConceptGraph::subclassesOf(Graph::OutputId, name);
     result.erase(Graph::OutputId);
     return result;
 }
 
 Hypergraph::Hyperedges Graph::implementations(const std::string& name)
 {
-    Hyperedges result;
-    result = Conceptgraph::traverse(Graph::ImplementationId, name, get(Graph::IsAId)->label(), UP);
+    Hyperedges result = CommonConceptGraph::subclassesOf(Graph::ImplementationId, name);
     result.erase(Graph::ImplementationId);
     return result;
 }
 
 Hypergraph::Hyperedges Graph::datatypes(const std::string& name)
 {
-    Hyperedges result;
-    result = Conceptgraph::traverse(Graph::DatatypeId, name, get(Graph::IsAId)->label(), UP);
+    Hyperedges result = CommonConceptGraph::subclassesOf(Graph::DatatypeId, name);
     result.erase(Graph::DatatypeId);
     return result;
 }
 
 Hypergraph::Hyperedges Graph::languages(const std::string& name)
 {
-    Hyperedges result;
-    result = Conceptgraph::traverse(Graph::LanguageId, name, get(Graph::IsAId)->label(), UP);
+    Hyperedges result = CommonConceptGraph::subclassesOf(Graph::LanguageId, name);
     result.erase(Graph::LanguageId);
     return result;
 }
 
 unsigned Graph::createAlgorithm(const std::string& name)
 {
-    createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::AlgorithmId, Graph::IsAId);
+    CommonConceptGraph::isA(a, Graph::AlgorithmId);
     return a;
 }
 
 unsigned Graph::createInput(const unsigned interfaceId, const std::string& name)
 {
-    createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::InputId, Graph::IsAId);
-    relate(a, interfaceId, Graph::IsAId);
+    CommonConceptGraph::isA(a, Graph::InputId);
+    CommonConceptGraph::isA(a, interfaceId);
     return a;
 }
 
 unsigned Graph::createOutput(const unsigned interfaceId, const std::string& name)
 {
-    createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::OutputId, Graph::IsAId);
-    relate(a, interfaceId, Graph::IsAId);
+    CommonConceptGraph::isA(a, Graph::OutputId);
+    CommonConceptGraph::isA(a, interfaceId);
     return a;
 }
 
 unsigned Graph::createInterface(const std::string& name)
 {
-    createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::InterfaceId, Graph::IsAId);
+    CommonConceptGraph::isA(a, Graph::InterfaceId);
     return a;
 }
 
 unsigned Graph::createImplementation(const std::string& name)
 {
-    createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::ImplementationId, Graph::IsAId);
+    CommonConceptGraph::isA(a, Graph::ImplementationId);
     return a;
 }
 
 unsigned Graph::createDatatype(const std::string& name)
 {
-    createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::DatatypeId, Graph::IsAId);
+    CommonConceptGraph::isA(a, Graph::DatatypeId);
     return a;
 }
 
 unsigned Graph::createLanguage(const std::string& name)
 {
-    createMainConcepts();
     unsigned a = create(name);
-    relate(a, Graph::LanguageId, Graph::IsAId);
+    CommonConceptGraph::isA(a, Graph::LanguageId);
     return a;
 }
 
@@ -179,7 +174,7 @@ unsigned Graph::has(const unsigned algorithmId, const unsigned interfaceId)
 {
     if (algorithms().count(algorithmId) && interfaces().count(interfaceId))
     {
-        return relate(algorithmId, interfaceId, Graph::HasAId);
+        return CommonConceptGraph::relateFrom(algorithmId, interfaceId, Graph::HasAId);
     }
     return 0;
 }
@@ -188,7 +183,7 @@ unsigned Graph::provides(const unsigned algorithmId, const unsigned outputId)
 {
     if (algorithms().count(algorithmId) && outputs().count(outputId))
     {
-        return relate(algorithmId, outputId, Graph::ProvidesId);
+        return CommonConceptGraph::relateFrom(algorithmId, outputId, Graph::ProvidesId);
     }
     return 0;
 }
@@ -197,7 +192,7 @@ unsigned Graph::needs(const unsigned algorithmId, const unsigned inputId)
 {
     if (algorithms().count(algorithmId) && inputs().count(inputId))
     {
-        return relate(algorithmId, inputId, Graph::NeedsId);
+        return CommonConceptGraph::relateFrom(algorithmId, inputId, Graph::NeedsId);
     }
     return 0;
 }
@@ -206,7 +201,7 @@ unsigned Graph::depends(const unsigned inputId, const unsigned outputId)
 {
     if (inputs().count(inputId) && outputs().count(outputId))
     {
-        return relate(inputId, outputId, Graph::DependsOnId);
+        return CommonConceptGraph::relateFrom(inputId, outputId, Graph::DependsOnId);
     }
     return 0;
 }
@@ -215,7 +210,7 @@ unsigned Graph::realizes(const unsigned implementationId, const unsigned algorit
 {
     if (implementations().count(implementationId) && algorithms().count(algorithmId))
     {
-        return relate(implementationId, algorithmId, Graph::RealizesId);
+        return CommonConceptGraph::relateFrom(implementationId, algorithmId, Graph::RealizesId);
     }
     return 0;
 }
@@ -224,7 +219,7 @@ unsigned Graph::represents(const unsigned datatypeId, const unsigned interfaceId
 {
     if (datatypes().count(datatypeId) && interfaces().count(interfaceId))
     {
-        return relate(datatypeId, interfaceId, Graph::RepresentsId);
+        return CommonConceptGraph::relateFrom(datatypeId, interfaceId, Graph::RepresentsId);
     }
     return 0;
 }
@@ -233,7 +228,7 @@ unsigned Graph::expressedIn(const unsigned implementationOrDatatypeId, const uns
 {
     if ((implementations().count(implementationOrDatatypeId) || datatypes().count(implementationOrDatatypeId)) && languages().count(languageId))
     {
-        return relate(implementationOrDatatypeId, languageId, Graph::ExpressedInId);
+        return CommonConceptGraph::relateFrom(implementationOrDatatypeId, languageId, Graph::ExpressedInId);
     }
     return 0;
 }

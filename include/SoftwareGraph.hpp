@@ -1,7 +1,7 @@
 #ifndef _SOFTWARE_GRAPH_HPP
 #define _SOFTWARE_GRAPH_HPP
 
-#include "Conceptgraph.hpp"
+#include "CommonConceptGraph.hpp"
 
 namespace Software {
 
@@ -45,7 +45,7 @@ namespace Software {
     NOTE: When merging with the concept of Finite State Machines, this whole thing would become an even whiter box :)
 */
 
-class Graph : public Conceptgraph
+class Graph : public CommonConceptGraph
 {
     public:
         // Identifiers for the main concepts
@@ -70,7 +70,7 @@ class Graph : public Conceptgraph
 
         // Constructor/Destructor
         Graph();
-        Graph(Conceptgraph& A);
+        Graph(CommonConceptGraph& A);
         ~Graph();
 
         // Generates the dictionary
