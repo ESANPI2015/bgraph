@@ -19,7 +19,6 @@ const unsigned Graph::NeedsId           = 2103;
 const unsigned Graph::ProvidesId        = 2104;
 const unsigned Graph::ExpressedInId     = 2105;
 const unsigned Graph::RealizesId        = 2106;
-//const unsigned Graph::UsesId            = 2107;
 const unsigned Graph::RepresentsId      = 2108;
 
 // GRAPH STUFF
@@ -47,12 +46,14 @@ void Graph::createMainConcepts()
     Conceptgraph::relate(Graph::ProvidesId, Graph::AlgorithmId, Graph::OutputId, "PROVIDES");
     CommonConceptGraph::subrelationOf(Graph::ProvidesId, Graph::HasAId);
 
-    // TODO: Are these relations subrelations of other, known relations?
     Conceptgraph::relate(Graph::ExpressedInId, Graph::ImplementationId, Graph::LanguageId, "EXPRESSED-IN");
     Conceptgraph::get(Graph::ExpressedInId)->from(Graph::DatatypeId); // OK :)
-    Conceptgraph::relate(Graph::RealizesId, Graph::ImplementationId, Graph::AlgorithmId, "REALIZES"); // Inverse of HAS-A?
+    // CommonConceptGraph::subrelationOf(Graph::ExpressedInId, CommonConceptGraph::PartOfId); // TODO: True?
+
+    Conceptgraph::relate(Graph::RealizesId, Graph::ImplementationId, Graph::AlgorithmId, "REALIZES");
+    // CommonConceptGraph::subrelationOf(Graph::RealizesId, CommonConceptGraph::IsAId); // TODO: True?
     Conceptgraph::relate(Graph::RepresentsId, Graph::DatatypeId, Graph::InterfaceId, "REPRESENTS");
-    //Conceptgraph::relate(Graph::UsesId, Graph::ImplementationId, Graph::DatatypeId, "USES"); // TODO: This is a questionable relation...
+    // CommonConceptGraph::subrelationOf(Graph::RepresentsId, CommonConceptGraph::IsAId); // TODO: True?
 }
 
 Graph::Graph()
@@ -70,52 +71,130 @@ Graph::~Graph()
 {
 }
 
-Hypergraph::Hyperedges Graph::algorithms(const std::string& name)
+Hypergraph::Hyperedges Graph::algorithmClasses(const std::string& name)
 {
     Hyperedges result = CommonConceptGraph::subclassesOf(Graph::AlgorithmId, name);
-    result.erase(Graph::AlgorithmId);
     return result;
 }
 
-Hypergraph::Hyperedges Graph::interfaces(const std::string& name)
+Hypergraph::Hyperedges Graph::interfaceClasses(const std::string& name)
 {
     Hyperedges result = CommonConceptGraph::subclassesOf(Graph::InterfaceId, name);
-    result.erase(Graph::InterfaceId);
     return result;
 }
 
-Hypergraph::Hyperedges Graph::inputs(const std::string& name)
+Hypergraph::Hyperedges Graph::inputClasses(const std::string& name)
 {
     Hyperedges result = CommonConceptGraph::subclassesOf(Graph::InputId, name);
-    result.erase(Graph::InputId);
     return result;
 }
 
-Hypergraph::Hyperedges Graph::outputs(const std::string& name)
+Hypergraph::Hyperedges Graph::outputClasses(const std::string& name)
 {
     Hyperedges result = CommonConceptGraph::subclassesOf(Graph::OutputId, name);
-    result.erase(Graph::OutputId);
     return result;
 }
 
-Hypergraph::Hyperedges Graph::implementations(const std::string& name)
+Hypergraph::Hyperedges Graph::implementationClasses(const std::string& name)
 {
     Hyperedges result = CommonConceptGraph::subclassesOf(Graph::ImplementationId, name);
-    result.erase(Graph::ImplementationId);
     return result;
 }
 
-Hypergraph::Hyperedges Graph::datatypes(const std::string& name)
+Hypergraph::Hyperedges Graph::datatypeClasses(const std::string& name)
 {
     Hyperedges result = CommonConceptGraph::subclassesOf(Graph::DatatypeId, name);
-    result.erase(Graph::DatatypeId);
     return result;
 }
 
-Hypergraph::Hyperedges Graph::languages(const std::string& name)
+Hypergraph::Hyperedges Graph::languageClasses(const std::string& name)
 {
     Hyperedges result = CommonConceptGraph::subclassesOf(Graph::LanguageId, name);
-    result.erase(Graph::LanguageId);
+    return result;
+}
+
+Hypergraph::Hyperedges Graph::algorithms(const std::string& name, const std::string& className)
+{
+    Hyperedges result;
+    // Get all device classes
+    Hyperedges classIds = algorithmClasses(className);
+    // For each of them get the instances with the given name
+    for (auto classId : classIds)
+    {
+        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
+    }
+    return result;
+}
+Hypergraph::Hyperedges Graph::interfaces(const std::string& name, const std::string& className)
+{
+    Hyperedges result;
+    // Get all device classes
+    Hyperedges classIds = interfaceClasses(className);
+    // For each of them get the instances with the given name
+    for (auto classId : classIds)
+    {
+        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
+    }
+    return result;
+}
+Hypergraph::Hyperedges Graph::inputs(const std::string& name, const std::string& className)
+{
+    Hyperedges result;
+    // Get all device classes
+    Hyperedges classIds = inputClasses(className);
+    // For each of them get the instances with the given name
+    for (auto classId : classIds)
+    {
+        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
+    }
+    return result;
+}
+Hypergraph::Hyperedges Graph::outputs(const std::string& name, const std::string& className)
+{
+    Hyperedges result;
+    // Get all device classes
+    Hyperedges classIds = outputClasses(className);
+    // For each of them get the instances with the given name
+    for (auto classId : classIds)
+    {
+        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
+    }
+    return result;
+}
+Hypergraph::Hyperedges Graph::implementations(const std::string& name, const std::string& className)
+{
+    Hyperedges result;
+    // Get all device classes
+    Hyperedges classIds = implementationClasses(className);
+    // For each of them get the instances with the given name
+    for (auto classId : classIds)
+    {
+        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
+    }
+    return result;
+}
+Hypergraph::Hyperedges Graph::datatypes(const std::string& name, const std::string& className)
+{
+    Hyperedges result;
+    // Get all device classes
+    Hyperedges classIds = datatypeClasses(className);
+    // For each of them get the instances with the given name
+    for (auto classId : classIds)
+    {
+        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
+    }
+    return result;
+}
+Hypergraph::Hyperedges Graph::languages(const std::string& name, const std::string& className)
+{
+    Hyperedges result;
+    // Get all device classes
+    Hyperedges classIds = languageClasses(className);
+    // For each of them get the instances with the given name
+    for (auto classId : classIds)
+    {
+        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
+    }
     return result;
 }
 
@@ -170,76 +249,60 @@ unsigned Graph::createLanguage(const std::string& name)
     return a;
 }
 
-unsigned Graph::has(const unsigned algorithmId, const unsigned interfaceId)
+unsigned Graph::has(const Hyperedges& algorithmIds, const Hyperedges& interfaceIds)
 {
-    if (algorithms().count(algorithmId) && interfaces().count(interfaceId))
-    {
-        return CommonConceptGraph::relateFrom(algorithmId, interfaceId, Graph::HasAId);
-    }
+    // An algorithm class or instance can only have an interface instance
+    Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
+    Hyperedges toIds = intersect(this->interfaces(), interfaceIds);
+    if (fromIds.size() && toIds.size())
+        return CommonConceptGraph::relateFrom(fromIds, toIds, Graph::HasAId);
     return 0;
 }
 
-unsigned Graph::provides(const unsigned algorithmId, const unsigned outputId)
+unsigned Graph::provides(const Hyperedges& algorithmIds, const Hyperedges& outputIds)
 {
-    if (algorithms().count(algorithmId) && outputs().count(outputId))
-    {
-        return CommonConceptGraph::relateFrom(algorithmId, outputId, Graph::ProvidesId);
-    }
+    // An algorithm class or instance can only have an output instance
+    Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
+    Hyperedges toIds = intersect(this->outputs(), outputIds);
+    if (fromIds.size() && toIds.size())
+        return CommonConceptGraph::relateFrom(fromIds, toIds, Graph::ProvidesId);
     return 0;
 }
 
-unsigned Graph::needs(const unsigned algorithmId, const unsigned inputId)
+unsigned Graph::needs(const Hyperedges& algorithmIds, const Hyperedges& inputIds)
 {
-    if (algorithms().count(algorithmId) && inputs().count(inputId))
-    {
-        return CommonConceptGraph::relateFrom(algorithmId, inputId, Graph::NeedsId);
-    }
+    // An algorithm class or instance can only have an output instance
+    Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
+    Hyperedges toIds = intersect(this->inputs(), inputIds);
+    if (fromIds.size() && toIds.size())
+        return CommonConceptGraph::relateFrom(fromIds, toIds, Graph::NeedsId);
     return 0;
 }
 
-unsigned Graph::depends(const unsigned inputId, const unsigned outputId)
+unsigned Graph::depends(const Hyperedges& inputIds, const Hyperedges& outputIds)
 {
-    if (inputs().count(inputId) && outputs().count(outputId))
-    {
-        return CommonConceptGraph::relateFrom(inputId, outputId, Graph::DependsOnId);
-    }
+    // For now only input instances can depend on output instances
+    Hyperedges fromIds = intersect(this->inputs(), inputIds);
+    Hyperedges toIds = intersect(this->outputs(), outputIds);
+    if (fromIds.size() && toIds.size())
+        return CommonConceptGraph::relateFrom(fromIds, toIds, Graph::DependsOnId);
     return 0;
 }
 
-unsigned Graph::realizes(const unsigned implementationId, const unsigned algorithmId)
+unsigned Graph::realizes(const Hyperedges& implementationIds, const Hyperedges& algorithmIds)
 {
-    if (implementations().count(implementationId) && algorithms().count(algorithmId))
-    {
-        return CommonConceptGraph::relateFrom(implementationId, algorithmId, Graph::RealizesId);
-    }
-    return 0;
+    // TODO: An algorithm class can be realized by multiple implementations ... are implementations subclasses of an algorithm? Or instances of an algorithm?
+    return CommonConceptGraph::relateFrom(implementationIds, algorithmIds, Graph::RealizesId);
 }
 
-unsigned Graph::represents(const unsigned datatypeId, const unsigned interfaceId)
+unsigned Graph::represents(const Hyperedges& datatypeIds, const Hyperedges& interfaceIds)
 {
-    if (datatypes().count(datatypeId) && interfaces().count(interfaceId))
-    {
-        return CommonConceptGraph::relateFrom(datatypeId, interfaceId, Graph::RepresentsId);
-    }
-    return 0;
+    return CommonConceptGraph::relateFrom(datatypeIds, interfaceIds, Graph::RepresentsId);
 }
 
-unsigned Graph::expressedIn(const unsigned implementationOrDatatypeId, const unsigned languageId)
+unsigned Graph::expressedIn(const Hyperedges& implementationOrDatatypeIds, const Hyperedges& languageIds)
 {
-    if ((implementations().count(implementationOrDatatypeId) || datatypes().count(implementationOrDatatypeId)) && languages().count(languageId))
-    {
-        return CommonConceptGraph::relateFrom(implementationOrDatatypeId, languageId, Graph::ExpressedInId);
-    }
-    return 0;
+    return CommonConceptGraph::relateFrom(implementationOrDatatypeIds, languageIds, Graph::ExpressedInId);
 }
-
-//unsigned Graph::uses(const unsigned implementationId, const unsigned datatypeId)
-//{
-//    if (implementations().count(implementationId) && datatypes().count(datatypeId))
-//    {
-//        return relate(implementationId, datatypeId, Graph::UsesId);
-//    }
-//    return 0;
-//}
 
 }

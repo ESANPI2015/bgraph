@@ -18,8 +18,11 @@ int main(void)
     Conceptgraph cgraph(*hypergraph);
     CommonConceptGraph ccgraph(cgraph);
     Software::Graph swgraph(ccgraph);
-    // Get all algorithms
-    auto algorithms = swgraph.algorithms();
+
+    // Get all algorithm classes (without overall superclass)
+    auto algorithms = swgraph.algorithmClasses();
+    algorithms.erase(Software::Graph::AlgorithmId);
+
     // For each of these algorithms
     for (auto algorithmId : algorithms)
     {
@@ -28,22 +31,16 @@ int main(void)
         result << "// Algorithm to C++ generator\n";
         result << "class " << algorithm->label() << " {\n";
         result << "\tpublic:\n";
-        // The interfaces of the device are in the intersection of allInterfaceIds and allChildrenOfDev TODO: without Inputs/Outputs
-        auto myInterfaceIds = swgraph.intersect(swgraph.interfaces(), swgraph.childrenOf(algorithmId));
-        result << "\t\t// Generate interface types\n";
-        for (auto interfaceId : myInterfaceIds)
-        {
-            auto interface = swgraph.get(interfaceId);
-            std::string datatypeName = "UNKNOWN";
-            // TODO: Find datatype
-            result << "\t\ttypedef " << datatypeName << " " << interface->label() << ";\n";
-        }
+        Hypergraph::Hyperedges myInterfaceClassIds;
         // Handle Inputs
         auto myInputIds = swgraph.intersect(swgraph.inputs(), swgraph.childrenOf(algorithmId));
         result << "\n\t\t// Generate functions to retrieve input values\n";
         for (auto inputId : myInputIds)
         {
-            auto interfaceIds = swgraph.intersect(swgraph.interfaces(), swgraph.to(swgraph.intersect(swgraph.relationsFrom(inputId),swgraph.factsOf(Software::Graph::IsAId)))); //superclassesOf
+            // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
+            // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
+            auto interfaceIds = swgraph.subtract(swgraph.superclassesOf(*(swgraph.classesOf(inputId).begin())), swgraph.inputClasses());
+            interfaceIds.erase(Software::Graph::InterfaceId);
             std::string typeOfInput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {
@@ -55,13 +52,18 @@ int main(void)
                 typeOfInput = swgraph.get(*interfaceIds.begin())->label();
             }
             result << "\t\tbool read_" << swgraph.get(inputId)->label() << "(" << typeOfInput << "& value);\n";
+            // Put input classes to the interface classes we need later
+            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
         }
         // Handle Outputs
         auto myOutputIds = swgraph.intersect(swgraph.outputs(), swgraph.childrenOf(algorithmId));
         result << "\n\t\t// Generate functions to write output values\n";
         for (auto outputId : myOutputIds)
         {
-            auto interfaceIds = swgraph.intersect(swgraph.interfaces(), swgraph.to(swgraph.intersect(swgraph.relationsFrom(outputId),swgraph.factsOf(Software::Graph::IsAId)))); //superclassesOf
+            // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
+            // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
+            auto interfaceIds = swgraph.subtract(swgraph.superclassesOf(*(swgraph.classesOf(outputId).begin())), swgraph.outputClasses());
+            interfaceIds.erase(Software::Graph::InterfaceId);
             std::string typeOfOutput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {
@@ -73,6 +75,17 @@ int main(void)
                 typeOfOutput = swgraph.get(*interfaceIds.begin())->label();
             }
             result << "\t\tbool write_" << swgraph.get(outputId)->label() << "(const " << typeOfOutput << "& value);\n";
+            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
+        }
+
+        // Handle the collected interface classes
+        result << "\n\t\t// Generate interface types\n";
+        for (auto interfaceId : myInterfaceClassIds)
+        {
+            auto interface = swgraph.get(interfaceId);
+            std::string datatypeName = "UNKNOWN";
+            // TODO: Find datatype. There can be multiple!!!
+            result << "\t\ttypedef " << datatypeName << " " << interface->label() << ";\n";
         }
         // Insert evaluation method
         result << "\n\t\t// Evaluation method\n";

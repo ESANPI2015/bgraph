@@ -16,15 +16,16 @@ namespace Software {
         IMPLEMENTATION, DATATYPE, LANGUAGE (for storing already available implementations of algorithms in different languages)
     The domain is encoded as follows:
     
-    ALGORITHM -- has --> INTERFACE
+    (ALGORITHM -- has --> INTERFACE)                    optional, inferrable
     INPUT -- is-a --> INTERFACE
     OUTPUT -- is-a --> INTERFACE
-    ALGORITHM -- needs --> INPUT
-    ALGORITHM -- provides --> OUTPUT
-    INPUT -- dependsOn --> OUTPUT
+    ALGORITHM -- needs(has) --> INPUT
+    ALGORITHM -- provides(has) --> OUTPUT
+    INPUT -- dependsOn(connects) --> OUTPUT
 
-    ALGORITHM <-- realizes -- IMPLEMENTATION -- expressedIn --> LANGUAGE
-    INTERFACE <-- represents -- DATATYPE -- expressedIn --> LANGUAGE
+    ALGORITHM <-- realizes(is-a) -- IMPLEMENTATION -- expressedIn(partOf) --> LANGUAGE
+    INTERFACE <-- represents(is-a) -- DATATYPE -- expressedIn(partOf) --> LANGUAGE
+
     (IMPLEMENTATION -- uses --> DATATYPE)               questionable
     (IMPLEMENTATION -- dependsOn --> IMPLEMENTATION)    optional, not needed yet
     (LANGUAGE -- has --> COMPILER)                      optional, not needed yet
@@ -56,7 +57,6 @@ class Graph : public CommonConceptGraph
         static const unsigned ImplementationId;
         static const unsigned LanguageId;
         static const unsigned DatatypeId;
-
         // Ids for identifiing main relations
         static const unsigned IsAId;
         static const unsigned HasAId;
@@ -66,7 +66,6 @@ class Graph : public CommonConceptGraph
         static const unsigned ExpressedInId;
         static const unsigned RealizesId;
         static const unsigned RepresentsId;
-        //static const unsigned UsesId;
 
         // Constructor/Destructor
         Graph();
@@ -77,41 +76,52 @@ class Graph : public CommonConceptGraph
         void createMainConcepts();
 
         // Factory functions
+        // NOTE: Create classes
         unsigned createAlgorithm(const std::string& name="Algorithm");
         unsigned createInterface(const std::string& name="Interface");
-        unsigned createInput(const unsigned interfaceId, const std::string& name="Input");
-        unsigned createOutput(const unsigned interfaceId, const std::string& name="Output");
-        unsigned createImplementation(const std::string& name="Implementation");
+        unsigned createInput(const unsigned interfaceId, const std::string& name="Input"); // TODO: Needed?
+        unsigned createOutput(const unsigned interfaceId, const std::string& name="Output"); // TODO: Needed?
+        unsigned createImplementation(const std::string& name="Implementation"); // TODO: Needed?
         unsigned createDatatype(const std::string& name="DataType");
-        unsigned createLanguage(const std::string& name="Language");
+        unsigned createLanguage(const std::string& name="Language"); // TODO: Needed?
+        // NOTE: Create instances
+        //unsigned instantiateAlgorithm(const unsigned superId, const std::string& name="");
+        //unsigned instantiateInput(const unsigned superId, const std::string& name="");
+        //unsigned instantiateOutput(const unsigned superId, const std::string& name="");
 
         // Queries
-        Hyperedges algorithms(const std::string& name="");
-        Hyperedges interfaces(const std::string& name="");
-        Hyperedges inputs(const std::string& name="");
-        Hyperedges outputs(const std::string& name="");
-        Hyperedges implementations(const std::string& name="");
-        Hyperedges datatypes(const std::string& name="");
-        Hyperedges languages(const std::string& name="");
+        // NOTE: Returns subclasses
+        Hyperedges algorithmClasses(const std::string& name="");
+        Hyperedges interfaceClasses(const std::string& name="");
+        Hyperedges inputClasses(const std::string& name="");
+        Hyperedges outputClasses(const std::string& name="");
+        Hyperedges implementationClasses(const std::string& name="");
+        Hyperedges datatypeClasses(const std::string& name="");
+        Hyperedges languageClasses(const std::string& name="");
+        // NOTE: Returns instances
+        Hyperedges algorithms(const std::string& name="", const std::string& className="");
+        Hyperedges interfaces(const std::string& name="", const std::string& className="");
+        Hyperedges inputs(const std::string& name="", const std::string& className="");
+        Hyperedges outputs(const std::string& name="", const std::string& className="");
+        Hyperedges implementations(const std::string& name="", const std::string& className="");
+        Hyperedges datatypes(const std::string& name="", const std::string& className="");
+        Hyperedges languages(const std::string& name="", const std::string& className="");
     
+        // Facts
+        // NOTE: Only the multidimensionals are used here (more generic)
         // Algorithms & I/O/P
         // RULE: A has X -> X is-a Interface
         // RULE: A provides O -> A has O, O is-a Output (, O is-a Interface)
         // RULE: A needs I -> A has I, I is-a Input (, I is-a Interface)
-        unsigned has(const unsigned algorithmId, const unsigned interfaceId);
-        unsigned provides(const unsigned algorithmId, const unsigned outputId);
-        unsigned needs(const unsigned algorithmId, const unsigned inputId);
+        unsigned has(const Hyperedges& algorithmIds, const Hyperedges& interfaceIds);
+        unsigned provides(const Hyperedges& algorithmIds, const Hyperedges& outputIds);
+        unsigned needs(const Hyperedges& algorithmIds, const Hyperedges& inputIds);
         // I/O & Dependencies
         // RULE: I dependsOn O -> I is-a Input, O is-a Output
-        unsigned depends(const unsigned inputId, const unsigned outputId);
-        // Algorithm & Implementation
-        unsigned realizes(const unsigned implementationId, const unsigned algorithmId);
-        // Interface & Datatype
-        unsigned represents(const unsigned datatypeId, const unsigned interfaceId);
-        // Implementation/Datatype & Language
-        unsigned expressedIn(const unsigned implementationOrDatatypeId, const unsigned languageId);
-        // Implementation & Datatype
-        //unsigned uses(const unsigned implementationId, const unsigned datatypeId);
+        unsigned depends(const Hyperedges& inputIds, const Hyperedges& outputIds);
+        unsigned realizes(const Hyperedges& implementationIds, const Hyperedges& algorithmIds);
+        unsigned represents(const Hyperedges& datatypeIds, const Hyperedges& interfaceIds);
+        unsigned expressedIn(const Hyperedges& implementationOrDatatypeIds, const Hyperedges& languageIds);
 };
 
 }
