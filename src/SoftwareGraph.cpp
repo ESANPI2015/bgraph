@@ -214,6 +214,22 @@ unsigned Graph::createLanguage(const std::string& name)
     return a;
 }
 
+unsigned Graph::instantiateInput(const unsigned superId, const std::string& name)
+{
+    unsigned id = CommonConceptGraph::instantiateFrom(superId, name);
+    // TODO:
+    // needs(deviceId, id);
+    return id;
+}
+
+unsigned Graph::instantiateOutput(const unsigned superId, const std::string& name)
+{
+    unsigned id = CommonConceptGraph::instantiateFrom(superId, name);
+    // TODO:
+    // provides(deviceId, id);
+    return id;
+}
+
 unsigned Graph::has(const Hyperedges& algorithmIds, const Hyperedges& interfaceIds)
 {
     // An algorithm class or instance can only have an interface instance

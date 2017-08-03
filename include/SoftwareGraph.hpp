@@ -86,8 +86,8 @@ class Graph : public CommonConceptGraph
         unsigned createLanguage(const std::string& name="Language"); // TODO: Needed?
         // NOTE: Create instances
         //unsigned instantiateAlgorithm(const unsigned superId, const std::string& name="");
-        //unsigned instantiateInput(const unsigned superId, const std::string& name="");
-        //unsigned instantiateOutput(const unsigned superId, const std::string& name="");
+        unsigned instantiateInput(const unsigned superId, const std::string& name="");
+        unsigned instantiateOutput(const unsigned superId, const std::string& name="");
 
         // Queries
         // NOTE: Returns subclasses
