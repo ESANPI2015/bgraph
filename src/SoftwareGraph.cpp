@@ -115,87 +115,52 @@ Hypergraph::Hyperedges Graph::languageClasses(const std::string& name)
 
 Hypergraph::Hyperedges Graph::algorithms(const std::string& name, const std::string& className)
 {
-    Hyperedges result;
-    // Get all device classes
+    // Get all super classes
     Hyperedges classIds = algorithmClasses(className);
-    // For each of them get the instances with the given name
-    for (auto classId : classIds)
-    {
-        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
-    }
-    return result;
+    // ... and then the instances of them
+    return CommonConceptGraph::instancesOf(classIds, name);
 }
 Hypergraph::Hyperedges Graph::interfaces(const std::string& name, const std::string& className)
 {
-    Hyperedges result;
-    // Get all device classes
+    // Get all super classes
     Hyperedges classIds = interfaceClasses(className);
-    // For each of them get the instances with the given name
-    for (auto classId : classIds)
-    {
-        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
-    }
-    return result;
+    // ... and then the instances of them
+    return CommonConceptGraph::instancesOf(classIds, name);
 }
 Hypergraph::Hyperedges Graph::inputs(const std::string& name, const std::string& className)
 {
-    Hyperedges result;
-    // Get all device classes
+    // Get all super classes
     Hyperedges classIds = inputClasses(className);
-    // For each of them get the instances with the given name
-    for (auto classId : classIds)
-    {
-        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
-    }
-    return result;
+    // ... and then the instances of them
+    return CommonConceptGraph::instancesOf(classIds, name);
 }
 Hypergraph::Hyperedges Graph::outputs(const std::string& name, const std::string& className)
 {
-    Hyperedges result;
-    // Get all device classes
+    // Get all super classes
     Hyperedges classIds = outputClasses(className);
-    // For each of them get the instances with the given name
-    for (auto classId : classIds)
-    {
-        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
-    }
-    return result;
+    // ... and then the instances of them
+    return CommonConceptGraph::instancesOf(classIds, name);
 }
 Hypergraph::Hyperedges Graph::implementations(const std::string& name, const std::string& className)
 {
-    Hyperedges result;
-    // Get all device classes
+    // Get all super classes
     Hyperedges classIds = implementationClasses(className);
-    // For each of them get the instances with the given name
-    for (auto classId : classIds)
-    {
-        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
-    }
-    return result;
+    // ... and then the instances of them
+    return CommonConceptGraph::instancesOf(classIds, name);
 }
 Hypergraph::Hyperedges Graph::datatypes(const std::string& name, const std::string& className)
 {
-    Hyperedges result;
-    // Get all device classes
+    // Get all super classes
     Hyperedges classIds = datatypeClasses(className);
-    // For each of them get the instances with the given name
-    for (auto classId : classIds)
-    {
-        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
-    }
-    return result;
+    // ... and then the instances of them
+    return CommonConceptGraph::instancesOf(classIds, name);
 }
 Hypergraph::Hyperedges Graph::languages(const std::string& name, const std::string& className)
 {
-    Hyperedges result;
-    // Get all device classes
+    // Get all super classes
     Hyperedges classIds = languageClasses(className);
-    // For each of them get the instances with the given name
-    for (auto classId : classIds)
-    {
-        result = unite(result, CommonConceptGraph::instancesOf(classId, name)); // TODO: Make instancesOf over Hyperedges
-    }
-    return result;
+    // ... and then the instances of them
+    return CommonConceptGraph::instancesOf(classIds, name);
 }
 
 unsigned Graph::createAlgorithm(const std::string& name)
