@@ -28,8 +28,8 @@ int main(void)
     auto dispId = swgraph.instantiateFrom(outputId, "disparity");
 
     std::cout << "> Assign inputs and outputs to algorithm\n";
-    swgraph.needs(Hypergraph::Hyperedges{firstId}, Hypergraph::Hyperedges{leftId, rightId});
-    swgraph.provides(Hypergraph::Hyperedges{firstId}, Hypergraph::Hyperedges{dispId});
+    swgraph.needs(firstId, unite(leftId, rightId));
+    swgraph.provides(firstId, dispId);
 
     std::cout << "> Query input classes\n";
     for (auto inputId : swgraph.inputClasses())

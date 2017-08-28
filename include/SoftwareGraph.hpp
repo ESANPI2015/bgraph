@@ -77,17 +77,21 @@ class Graph : public CommonConceptGraph
 
         // Factory functions
         // NOTE: Create classes
-        unsigned createAlgorithm(const std::string& name="Algorithm");
-        unsigned createInterface(const std::string& name="Interface");
-        unsigned createInput(const unsigned interfaceId, const std::string& name="Input"); // TODO: Needed?
-        unsigned createOutput(const unsigned interfaceId, const std::string& name="Output"); // TODO: Needed?
-        unsigned createImplementation(const std::string& name="Implementation"); // TODO: Needed?
-        unsigned createDatatype(const std::string& name="DataType");
-        unsigned createLanguage(const std::string& name="Language"); // TODO: Needed?
+        Hyperedges createAlgorithm(const std::string& name="Algorithm");
+        Hyperedges createInterface(const std::string& name="Interface");
+        Hyperedges createInput(const unsigned interfaceId, const std::string& name="Input"); // TODO: Needed?
+        Hyperedges createOutput(const unsigned interfaceId, const std::string& name="Output"); // TODO: Needed?
+        Hyperedges createInput(const Hyperedges& interfaceIds, const std::string& name="Input"); // TODO: Needed?
+        Hyperedges createOutput(const Hyperedges& interfaceIds, const std::string& name="Output"); // TODO: Needed?
+        Hyperedges createImplementation(const std::string& name="Implementation"); // TODO: Needed?
+        Hyperedges createDatatype(const std::string& name="DataType");
+        Hyperedges createLanguage(const std::string& name="Language"); // TODO: Needed?
         // NOTE: Create instances
-        //unsigned instantiateAlgorithm(const unsigned superId, const std::string& name="");
-        unsigned instantiateInput(const unsigned superId, const std::string& name="");
-        unsigned instantiateOutput(const unsigned superId, const std::string& name="");
+        //Hyperedges instantiateAlgorithm(const unsigned superId, const std::string& name="");
+        Hyperedges instantiateInput(const unsigned superId, const std::string& name="");
+        Hyperedges instantiateOutput(const unsigned superId, const std::string& name="");
+        Hyperedges instantiateInput(const Hyperedges& superId, const std::string& name="");
+        Hyperedges instantiateOutput(const Hyperedges& superId, const std::string& name="");
 
         // Queries
         // NOTE: Returns subclasses
@@ -113,15 +117,15 @@ class Graph : public CommonConceptGraph
         // RULE: A has X -> X is-a Interface
         // RULE: A provides O -> A has O, O is-a Output (, O is-a Interface)
         // RULE: A needs I -> A has I, I is-a Input (, I is-a Interface)
-        unsigned has(const Hyperedges& algorithmIds, const Hyperedges& interfaceIds);
-        unsigned provides(const Hyperedges& algorithmIds, const Hyperedges& outputIds);
-        unsigned needs(const Hyperedges& algorithmIds, const Hyperedges& inputIds);
+        Hyperedges has(const Hyperedges& algorithmIds, const Hyperedges& interfaceIds);
+        Hyperedges provides(const Hyperedges& algorithmIds, const Hyperedges& outputIds);
+        Hyperedges needs(const Hyperedges& algorithmIds, const Hyperedges& inputIds);
         // I/O & Dependencies
         // RULE: I dependsOn O -> I is-a Input, O is-a Output
-        unsigned depends(const Hyperedges& inputIds, const Hyperedges& outputIds);
-        unsigned realizes(const Hyperedges& implementationIds, const Hyperedges& algorithmIds);
-        unsigned represents(const Hyperedges& datatypeIds, const Hyperedges& interfaceIds);
-        unsigned expressedIn(const Hyperedges& implementationOrDatatypeIds, const Hyperedges& languageIds);
+        Hyperedges depends(const Hyperedges& inputIds, const Hyperedges& outputIds);
+        Hyperedges realizes(const Hyperedges& implementationIds, const Hyperedges& algorithmIds);
+        Hyperedges represents(const Hyperedges& datatypeIds, const Hyperedges& interfaceIds);
+        Hyperedges expressedIn(const Hyperedges& implementationOrDatatypeIds, const Hyperedges& languageIds);
 };
 
 }

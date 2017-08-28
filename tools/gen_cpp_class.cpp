@@ -31,15 +31,15 @@ int main(void)
         result << "// Algorithm to C++ generator\n";
         result << "class " << algorithm->label() << " {\n";
         result << "\tpublic:\n";
-        Hypergraph::Hyperedges myInterfaceClassIds;
+        Hyperedges myInterfaceClassIds;
         // Handle Inputs (input instances which are children of algorithmId
-        auto myInputIds = swgraph.intersect(swgraph.inputs(), swgraph.childrenOf(algorithmId));
+        auto myInputIds = intersect(swgraph.inputs(), swgraph.childrenOf(algorithmId));
         result << "\n\t\t// Generate functions to retrieve input values\n";
         for (auto inputId : myInputIds)
         {
             // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
             // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
-            auto interfaceIds = swgraph.subtract(swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.inputClasses());
+            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.inputClasses());
             interfaceIds.erase(Software::Graph::InterfaceId);
             std::string typeOfInput = "UNDEFINED";
             if (interfaceIds.size() > 1)
@@ -56,13 +56,13 @@ int main(void)
             myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
         }
         // Handle Outputs
-        auto myOutputIds = swgraph.intersect(swgraph.outputs(), swgraph.childrenOf(algorithmId));
+        auto myOutputIds = intersect(swgraph.outputs(), swgraph.childrenOf(algorithmId));
         result << "\n\t\t// Generate functions to write output values\n";
         for (auto outputId : myOutputIds)
         {
             // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
             // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
-            auto interfaceIds = swgraph.subtract(swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.outputClasses());
+            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.outputClasses());
             interfaceIds.erase(Software::Graph::InterfaceId);
             std::string typeOfOutput = "UNDEFINED";
             if (interfaceIds.size() > 1)
