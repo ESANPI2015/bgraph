@@ -18,16 +18,26 @@ int main(void)
 
     // Only interface: reals
     auto realId = swgraph.createInterface("RealNumber");
+    auto realVecId = swgraph.createInterface("RealNumberVec");
+    auto numOfEntriesId = swgraph.createInterface("RealNumberVecEntries");
     // In C: float32
     auto floatId = swgraph.createDatatype("float");
+    auto floatVecId = swgraph.createDatatype("float[10]");
+    auto uintId = swgraph.createDatatype("uint8_t");
     // In VHDL: std_logic_vector(31 downto 0)
     auto stdvecId = swgraph.createDatatype("std_logic_vector(31 downto 0)");
+    auto stdvecVecId = swgraph.createDatatype("array (0 to 9) of std_logic_vector(31 downto 0)");
+    auto uintvecId = swgraph.createDatatype("std_logic_vector(7 downto 0)");
     swgraph.represents(unite(floatId, stdvecId), realId);
-    swgraph.expressedIn(floatId, cId);
-    swgraph.expressedIn(stdvecId, vhdlId);
+    swgraph.represents(unite(floatVecId, stdvecVecId), realVecId);
+    swgraph.represents(unite(uintId, uintvecId), numOfEntriesId);
+    swgraph.expressedIn(unite(floatId, unite(floatVecId, uintId)), cId);
+    swgraph.expressedIn(unite(stdvecId, unite(stdvecVecId, uintvecId)), vhdlId);
 
     // Input/Output classes
     auto inputClassId = swgraph.createInput(realId, "RealInput");
+    auto mergeClassId = swgraph.createInput(realVecId, "RealVecInput");
+    auto entriesClassId = swgraph.createInput(numOfEntriesId, "VecEntries");
     auto outputClassId = swgraph.createOutput(realId, "RealOutput");
 
     // Build up the behavior graph components aka Nodes
@@ -158,12 +168,8 @@ int main(void)
     auto sumId = swgraph.createAlgorithm("SUM");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned int i = 0; i < maxMergeInputs; ++i)
-    {
-        std::stringstream ss;
-        ss << "input" << i;
-        inputIds = unite(inputIds, swgraph.instantiateInput(inputClassId, ss.str()));
-    }
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(sumId, inputIds);
     swgraph.provides(sumId, id1);
@@ -172,12 +178,8 @@ int main(void)
     auto prodId = swgraph.createAlgorithm("PRODUCT");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned int i = 0; i < maxMergeInputs; ++i)
-    {
-        std::stringstream ss;
-        ss << "input" << i;
-        inputIds = unite(inputIds, swgraph.instantiateInput(inputClassId, ss.str()));
-    }
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(prodId, inputIds);
     swgraph.provides(prodId, id1);
@@ -186,12 +188,8 @@ int main(void)
     auto minId = swgraph.createAlgorithm("MIN");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned int i = 0; i < maxMergeInputs; ++i)
-    {
-        std::stringstream ss;
-        ss << "input" << i;
-        inputIds = unite(inputIds, swgraph.instantiateInput(inputClassId, ss.str()));
-    }
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(minId, inputIds);
     swgraph.provides(minId, id1);
@@ -200,12 +198,8 @@ int main(void)
     auto maxId = swgraph.createAlgorithm("MAX");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned int i = 0; i < maxMergeInputs; ++i)
-    {
-        std::stringstream ss;
-        ss << "input" << i;
-        inputIds = unite(inputIds, swgraph.instantiateInput(inputClassId, ss.str()));
-    }
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(maxId, inputIds);
     swgraph.provides(maxId, id1);
@@ -214,12 +208,8 @@ int main(void)
     auto meanId = swgraph.createAlgorithm("MEAN");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned int i = 0; i < maxMergeInputs; ++i)
-    {
-        std::stringstream ss;
-        ss << "input" << i;
-        inputIds = unite(inputIds, swgraph.instantiateInput(inputClassId, ss.str()));
-    }
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(meanId, inputIds);
     swgraph.provides(meanId, id1);
@@ -228,12 +218,8 @@ int main(void)
     auto normId = swgraph.createAlgorithm("NORM");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned int i = 0; i < maxMergeInputs; ++i)
-    {
-        std::stringstream ss;
-        ss << "input" << i;
-        inputIds = unite(inputIds, swgraph.instantiateInput(inputClassId, ss.str()));
-    }
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(normId, inputIds);
     swgraph.provides(normId, id1);

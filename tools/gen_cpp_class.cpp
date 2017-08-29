@@ -68,52 +68,40 @@ int main (int argc, char **argv)
         std::stringstream result;
         auto algorithm = swgraph.get(algorithmId);
         result << "// Algorithm to C++ generator\n";
+        result << "#ifndef __" << algorithm->label() << "_HEADER\n";
+        result << "#define __" << algorithm->label() << "_HEADER\n";
         result << "class " << algorithm->label() << " {\n";
         result << "\tpublic:\n";
         Hyperedges myInterfaceClassIds;
         // Handle Inputs (input instances which are children of algorithmId
         auto myInputIds = intersect(swgraph.inputs(), swgraph.childrenOf(algorithmId));
-        result << "\n\t\t// Generate functions to retrieve input values\n";
         for (auto inputId : myInputIds)
         {
             // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
             // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
             auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.inputClasses());
             interfaceIds.erase(Software::Graph::InterfaceId);
-            std::string typeOfInput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {
                 std::cerr << "Multiple interfaces for input " << swgraph.get(inputId)->label() << "\n";
                 return 1;
             }
-            if (interfaceIds.size() == 1)
-            {
-                typeOfInput = swgraph.get(*interfaceIds.begin())->label();
-            }
-            result << "\t\tbool read_" << swgraph.get(inputId)->label() << "(" << typeOfInput << "& value);\n";
             // Put input classes to the interface classes we need later
             myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
         }
         // Handle Outputs
         auto myOutputIds = intersect(swgraph.outputs(), swgraph.childrenOf(algorithmId));
-        result << "\n\t\t// Generate functions to write output values\n";
         for (auto outputId : myOutputIds)
         {
             // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
             // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
             auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.outputClasses());
             interfaceIds.erase(Software::Graph::InterfaceId);
-            std::string typeOfOutput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {
                 std::cerr << "Multiple interfaces for output " << swgraph.get(outputId)->label() << "\n";
                 return 1;
             }
-            if (interfaceIds.size() == 1)
-            {
-                typeOfOutput = swgraph.get(*interfaceIds.begin())->label();
-            }
-            result << "\t\tbool write_" << swgraph.get(outputId)->label() << "(const " << typeOfOutput << "& value);\n";
             myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
         }
 
@@ -135,10 +123,58 @@ int main (int argc, char **argv)
             if (dataTypes.empty())
                 result << "\t\ttypedef UNKNOWN " << interface->label() << ";\n";
         }
-        // Insert evaluation method
-        result << "\n\t\t// Evaluation method\n";
-        result << "\t\tbool evaluate();\n";
+        // Generate main function
+        result << "\n\t\t// Generate function\n";
+        result << "\t\tbool operator () (\n";
+        for (auto inputId : myInputIds)
+        {
+            // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
+            // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
+            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.inputClasses());
+            interfaceIds.erase(Software::Graph::InterfaceId);
+            std::string typeOfInput = "UNDEFINED";
+            if (interfaceIds.size() > 1)
+            {
+                std::cerr << "Multiple interfaces for input " << swgraph.get(inputId)->label() << "\n";
+                return 1;
+            }
+            if (interfaceIds.size() == 1)
+            {
+                typeOfInput = swgraph.get(*interfaceIds.begin())->label();
+            }
+            result << "\t\t\tconst " << typeOfInput << "& " << swgraph.get(inputId)->label() << ",\n";
+            // Put input classes to the interface classes we need later
+            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
+        }
+        // Handle Outputs
+        for (auto outputId : myOutputIds)
+        {
+            // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
+            // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
+            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.outputClasses());
+            interfaceIds.erase(Software::Graph::InterfaceId);
+            std::string typeOfOutput = "UNDEFINED";
+            if (interfaceIds.size() > 1)
+            {
+                std::cerr << "Multiple interfaces for output " << swgraph.get(outputId)->label() << "\n";
+                return 1;
+            }
+            if (interfaceIds.size() == 1)
+            {
+                typeOfOutput = swgraph.get(*interfaceIds.begin())->label();
+            }
+            result << "\t\t\t" << typeOfOutput << "& " << swgraph.get(outputId)->label() << ",\n";
+            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
+        }
+        // Generate a dummy
+        result << "\t\t\tvoid *ctx)\n";
+        result << "\t\t{\n";
+        result << "\t\t\t// Implement algorithm here\n";
+        result << "\t\t\treturn false;\n";
+        result << "\t\t}\n";
         result << "};\n";
+        result << "#endif\n";
+        
         std::cout << result.str();
     }
     return 0;

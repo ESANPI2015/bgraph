@@ -121,6 +121,8 @@ int main (int argc, char **argv)
             myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
         }
         result << "\n\t-- Standard Signals --\n";
+        result << "\tstart : in std_logic;\n";
+        result << "\tvalid : out std_logic;\n";
         result << "\tclk : in std_logic;\n";
         result << "\trst : in std_logic\n";
         result << ");\n";
