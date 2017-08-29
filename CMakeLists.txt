@@ -60,6 +60,11 @@ target_link_libraries(gen_cpp_class swgraph)
 install(TARGETS gen_cpp_class
 RUNTIME DESTINATION bin)
 
+add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
+target_link_libraries(gen_vhdl_entity swgraph)
+install(TARGETS gen_vhdl_entity
+RUNTIME DESTINATION bin)
+
 # pkg-config, to be installed:
 configure_file(${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION lib/pkgconfig)
