@@ -4,23 +4,62 @@
 #include <iostream>
 #include <sstream>
 #include <cassert>
+#include <getopt.h>
 
-int main(void)
+static struct option long_options[] = {
+    {"help", no_argument, 0, 'h'},
+    {0,0,0,0}
+};
+
+void usage (const char *myName)
+{
+    std::cout << "Usage:\n";
+    std::cout << myName << " <yaml-file> <label>\n\n";
+    std::cout << "Options:\n";
+    std::cout << "--help\t" << "Show usage\n";
+    std::cout << "\nExample:\n";
+    std::cout << myName << " myspec.yml myAlgorithm\n";
+}
+
+int main (int argc, char **argv)
 {
 
-    // TODO:
-    // * Import software spec
-    // * Search for all algorithms
-    // * Create a class header for each algorithm
+    // Parse command line
+    int c;
+    while (1)
+    {
+        int option_index = 0;
+        c = getopt_long(argc, argv, "h", long_options, &option_index);
+        if (c == -1)
+            break;
 
-    // Test case:
-    auto hypergraph = YAML::LoadFile("swgraph.yml").as<Hypergraph*>();
+        switch (c)
+        {
+            case 'h':
+            case '?':
+                break;
+            default:
+                std::cout << "W00t?!\n";
+                return 1;
+        }
+    }
+
+    if ((argc - optind) < 2)
+    {
+        usage(argv[0]);
+        return 1;
+    }
+
+    // Set vars
+    std::string fileName(argv[optind]);
+    std::string classLabel(argv[optind+1]);
+    Hypergraph* hypergraph = YAML::LoadFile(fileName).as<Hypergraph*>();
     Conceptgraph cgraph(*hypergraph);
     CommonConceptGraph ccgraph(cgraph);
     Software::Graph swgraph(ccgraph);
 
     // Get all algorithm classes (without overall superclass)
-    auto algorithms = swgraph.algorithmClasses();
+    Hyperedges algorithms = swgraph.algorithmClasses(classLabel);
     algorithms.erase(Software::Graph::AlgorithmId);
 
     // For each of these algorithms
@@ -79,13 +118,22 @@ int main(void)
         }
 
         // Handle the collected interface classes
+        Hyperedges myLanguages = swgraph.languages("C");
         result << "\n\t\t// Generate interface types\n";
         for (auto interfaceId : myInterfaceClassIds)
         {
             auto interface = swgraph.get(interfaceId);
-            std::string datatypeName = "UNKNOWN";
-            // TODO: Find datatype. There can be multiple!!!
-            result << "\t\ttypedef " << datatypeName << " " << interface->label() << ";\n";
+            std::string datatypeName;
+            Hyperedges typesOfIf = swgraph.from(intersect(swgraph.relationsOf(interfaceId), swgraph.factsOf(Software::Graph::RepresentsId)));
+            Hyperedges typesOfLang = swgraph.from(intersect(swgraph.relationsOf(myLanguages), swgraph.factsOf(Software::Graph::ExpressedInId)));
+            Hyperedges dataTypes = intersect(typesOfIf, typesOfLang);
+            for (auto typeId : dataTypes)
+            {
+                datatypeName = swgraph.get(typeId)->label();
+                result << "\t\ttypedef " << datatypeName << " " << interface->label() << ";\n";
+            }
+            if (dataTypes.empty())
+                result << "\t\ttypedef UNKNOWN " << interface->label() << ";\n";
         }
         // Insert evaluation method
         result << "\n\t\t// Evaluation method\n";
