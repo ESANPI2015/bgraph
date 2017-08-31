@@ -168,7 +168,8 @@ int main(void)
     auto sumId = swgraph.createAlgorithm("SUM");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "values"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "weights"));
     inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(sumId, inputIds);
@@ -178,7 +179,8 @@ int main(void)
     auto prodId = swgraph.createAlgorithm("PRODUCT");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "values"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "weights"));
     inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(prodId, inputIds);
@@ -188,7 +190,8 @@ int main(void)
     auto minId = swgraph.createAlgorithm("MIN");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "values"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "weights"));
     inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(minId, inputIds);
@@ -198,7 +201,8 @@ int main(void)
     auto maxId = swgraph.createAlgorithm("MAX");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "values"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "weights"));
     inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(maxId, inputIds);
@@ -208,7 +212,8 @@ int main(void)
     auto meanId = swgraph.createAlgorithm("MEAN");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "values"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "weights"));
     inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(meanId, inputIds);
@@ -218,15 +223,30 @@ int main(void)
     auto normId = swgraph.createAlgorithm("NORM");
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "inputs"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "values"));
+    inputIds=unite(inputIds, swgraph.instantiateInput(mergeClassId, "weights"));
     inputIds=unite(inputIds, swgraph.instantiateInput(entriesClassId, "entries"));
     id1 = swgraph.instantiateOutput(outputClassId, "merged");
     swgraph.needs(normId, inputIds);
     swgraph.provides(normId, id1);
 
-    // NOTE: The final BG nodes could be made as containers. However, we then have to make versions for all possible merge combinations...
+    // Special CLASSES
+    // Extern behavior graph algorithms contain custom implementations
+    // This means it is just a class with no interfaces on itself
+    auto externClassId = swgraph.createAlgorithm("EXTERN");
 
-    // TODO: Subclass the Nodes/Merges for C/VHDL implementations
+    // Subgraph behavior graph algorithms contain compositions of other behavior graph nodes
+    // Again, this superclass has no interfaces on its own
+    auto subgraphClassId = swgraph.createAlgorithm("SUBGRAPH");
+
+    // Here is the end of the language definition
+    // For the language to become usable, we now have to provide implementations for each of the atomic nodes for each of the languages
+    // In addition to that, the relation DEPENDS-ON has to be interpreted as well ... It will trigger the generation of GLUE CODE
+    // Actually, for each DEPENDS-ON a 1-TO-1 IMPLEMENTATION has to be given which takes care about passing information from A to B
+    // For this IMPLEMENTATION we have 4 different possibilities: passing data between C components, passing data between VHDL components and 2 interlanguage versions
+    // In VHDL: just wiring including activation
+    // In C: passing values and calling functions
+    // Furthermore, this amount will also increase whether components are executed in the same context/hardware or not!
 
     // Store the setup in a YAML for inspection
     YAML::Node test;

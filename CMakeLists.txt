@@ -50,7 +50,12 @@ target_link_libraries(testSWGraph swgraph)
 install(TARGETS testSWGraph
 RUNTIME DESTINATION bin)
 
-add_executable(def_bg_components test/def_bg_components.cpp)
+add_executable(query_graph tools/query_graph.cpp)
+target_link_libraries(query_graph swgraph)
+install(TARGETS query_graph
+RUNTIME DESTINATION bin)
+
+add_executable(def_bg_components tools/def_bg_components.cpp)
 target_link_libraries(def_bg_components swgraph)
 install(TARGETS def_bg_components
 RUNTIME DESTINATION bin)
