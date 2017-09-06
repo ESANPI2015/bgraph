@@ -2,6 +2,7 @@
 #include "HyperedgeYAML.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <cassert>
 #include <getopt.h>
@@ -14,11 +15,11 @@ static struct option long_options[] = {
 void usage (const char *myName)
 {
     std::cout << "Usage:\n";
-    std::cout << myName << " <yaml-file> <label>\n\n";
+    std::cout << myName << " <yaml-file-in> <label> <yaml-file-out>\n\n";
     std::cout << "Options:\n";
     std::cout << "--help\t" << "Show usage\n";
     std::cout << "\nExample:\n";
-    std::cout << myName << " myspec.yml myAlgorithm\n";
+    std::cout << myName << " myspec.yml myAlgorithm myspec2.yml\n";
 }
 
 int main (int argc, char **argv)
@@ -44,16 +45,17 @@ int main (int argc, char **argv)
         }
     }
 
-    if ((argc - optind) < 2)
+    if ((argc - optind) < 3)
     {
         usage(argv[0]);
         return 1;
     }
 
     // Set vars
-    std::string fileName(argv[optind]);
+    std::string fileNameIn(argv[optind]);
     std::string classLabel(argv[optind+1]);
-    Hypergraph* hypergraph = YAML::LoadFile(fileName).as<Hypergraph*>();
+    std::string fileNameOut(argv[optind+2]);
+    Hypergraph* hypergraph = YAML::LoadFile(fileNameIn).as<Hypergraph*>();
     Conceptgraph cgraph(*hypergraph);
     CommonConceptGraph ccgraph(cgraph);
     Software::Graph swgraph(ccgraph);
@@ -156,7 +158,23 @@ int main (int argc, char **argv)
                 result << "\ttype " << interface->label() << " is UNKNOWN;\n";
         }
         result << "end " << algorithm->label() << "_types;\n";
-        std::cout << result.str();
+
+        // Create implementation for algorithm with this result
+        Hyperedges implId = swgraph.createImplementation(result.str());
+        swgraph.realizes(implId, Hyperedges{algorithmId});
+        swgraph.expressedIn(implId, myLanguages);
     }
+
+    // Store modified graph
+    std::ofstream fout;
+    fout.open(fileNameOut);
+    if(!fout.good()) {
+        std::cout << "FAILED\n";
+    }
+    YAML::Node test;
+    test = static_cast<Hypergraph*>(&swgraph);
+    fout << test;
+    fout.close();
+
     return 0;
 }
