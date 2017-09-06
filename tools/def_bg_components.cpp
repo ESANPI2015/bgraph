@@ -17,14 +17,17 @@ int main(void)
     auto vhdlId = swgraph.instantiateFrom(swgraph.createLanguage("VHDL"));
 
     // Only interface: reals
+    // TODO: Shouldn't these be instances?
     auto realId = swgraph.createInterface("RealNumber");
     auto realVecId = swgraph.createInterface("RealNumberVec");
     auto numOfEntriesId = swgraph.createInterface("RealNumberVecEntries");
     // In C: float32
+    // TODO: Shouldn't these be instances?
     auto floatId = swgraph.createDatatype("float");
     auto floatVecId = swgraph.createDatatype("float[10]");
     auto uintId = swgraph.createDatatype("uint8_t");
     // In VHDL: std_logic_vector(31 downto 0)
+    // TODO: Shouldn't these be instances?
     auto stdvecId = swgraph.createDatatype("std_logic_vector(31 downto 0)");
     auto stdvecVecId = swgraph.createDatatype("array (0 to 9) of std_logic_vector(31 downto 0)");
     auto uintvecId = swgraph.createDatatype("std_logic_vector(7 downto 0)");
@@ -244,6 +247,7 @@ int main(void)
     // In addition to that, the relation DEPENDS-ON has to be interpreted as well ... It will trigger the generation of GLUE CODE
     // Actually, for each DEPENDS-ON a 1-TO-1 IMPLEMENTATION has to be given which takes care about passing information from A to B
     // For this IMPLEMENTATION we have 4 different possibilities: passing data between C components, passing data between VHDL components and 2 interlanguage versions
+    // However, the generation of GLUE is only possible if SW to HW mapping is available.
     // In VHDL: just wiring including activation
     // In C: passing values and calling functions
     // Furthermore, this amount will also increase whether components are executed in the same context/hardware or not!
