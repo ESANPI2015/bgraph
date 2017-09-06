@@ -50,6 +50,11 @@ target_link_libraries(testSWGraph swgraph)
 install(TARGETS testSWGraph
 RUNTIME DESTINATION bin)
 
+add_executable(testBG test/testBG.cpp)
+target_link_libraries(testBG swgraph)
+install(TARGETS testBG
+RUNTIME DESTINATION bin)
+
 add_executable(query_graph tools/query_graph.cpp)
 target_link_libraries(query_graph swgraph)
 install(TARGETS query_graph
