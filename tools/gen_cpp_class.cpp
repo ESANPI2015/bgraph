@@ -22,6 +22,11 @@ void usage (const char *myName)
     std::cout << myName << " myspec.yml myAlgorithm myspec2.yml\n";
 }
 
+// For each algorithm:
+// * Create interfaces & types
+// * Check parts
+//   - If no parts, create atomic class
+//   - if parts, call each one in topological order/in BFS order from inputs to outputs TODO
 int main (int argc, char **argv)
 {
 
@@ -69,48 +74,47 @@ int main (int argc, char **argv)
     {
         std::stringstream result;
         auto algorithm = swgraph.get(algorithmId);
+
+        // Get all properties needed for code generation
+        Hyperedges myLanguages = swgraph.languages("C");
+        // TODO: Do we want transitive closure? Actually we want to REUSE code from parts of parts, right?
+        Hyperedges parts = swgraph.partsOf(Hyperedges{algorithmId});
+        parts.erase(algorithmId);
+        Hyperedges children = swgraph.childrenOf(algorithmId);
+        children.erase(algorithmId);
+        Hyperedges inputs = intersect(children, swgraph.inputs());
+        Hyperedges outputs = intersect(children, swgraph.outputs());
+        Hyperedges allInterfaces;
+        std::map< unsigned, Hyperedges > interfacesOfPort;
+        for (unsigned inputId : inputs)
+        {
+            Hyperedges interfaces;
+            interfaces = swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN);
+            interfaces = subtract(interfaces, swgraph.inputClasses());
+            interfaces.erase(Software::Graph::InterfaceId);
+            interfacesOfPort[inputId] = interfaces;
+            allInterfaces.insert(interfaces.begin(), interfaces.end());
+        }
+        for (unsigned outputId : outputs)
+        {
+            Hyperedges interfaces;
+            interfaces = swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN);
+            interfaces = subtract(interfaces, swgraph.outputClasses());
+            interfaces.erase(Software::Graph::InterfaceId);
+            interfacesOfPort[outputId] = interfaces;
+            allInterfaces.insert(interfaces.begin(), interfaces.end());
+        }
+
+        // PREAMBLE
         result << "// Algorithm to C++ generator\n";
         result << "#ifndef __" << algorithm->label() << "_HEADER\n";
         result << "#define __" << algorithm->label() << "_HEADER\n";
         result << "class " << algorithm->label() << " {\n";
         result << "\tpublic:\n";
-        Hyperedges myInterfaceClassIds;
-        // Handle Inputs (input instances which are children of algorithmId
-        auto myInputIds = intersect(swgraph.inputs(), swgraph.childrenOf(algorithmId));
-        for (auto inputId : myInputIds)
-        {
-            // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
-            // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
-            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.inputClasses());
-            interfaceIds.erase(Software::Graph::InterfaceId);
-            if (interfaceIds.size() > 1)
-            {
-                std::cerr << "Multiple interfaces for input " << swgraph.get(inputId)->label() << "\n";
-                return 1;
-            }
-            // Put input classes to the interface classes we need later
-            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
-        }
-        // Handle Outputs
-        auto myOutputIds = intersect(swgraph.outputs(), swgraph.childrenOf(algorithmId));
-        for (auto outputId : myOutputIds)
-        {
-            // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
-            // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
-            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.outputClasses());
-            interfaceIds.erase(Software::Graph::InterfaceId);
-            if (interfaceIds.size() > 1)
-            {
-                std::cerr << "Multiple interfaces for output " << swgraph.get(outputId)->label() << "\n";
-                return 1;
-            }
-            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
-        }
 
         // Handle the collected interface classes
-        Hyperedges myLanguages = swgraph.languages("C");
         result << "\n\t\t// Generate interface types\n";
-        for (auto interfaceId : myInterfaceClassIds)
+        for (auto interfaceId : allInterfaces)
         {
             auto interface = swgraph.get(interfaceId);
             std::string datatypeName;
@@ -125,15 +129,23 @@ int main (int argc, char **argv)
             if (dataTypes.empty())
                 result << "\t\ttypedef UNKNOWN " << interface->label() << ";\n";
         }
-        // Generate main function
+
+        // Instantiate parts (to not confuse C++, partId is also included)
+        result << "\n\t\t// Instantiate parts\n";
+        for (unsigned partId : parts)
+        {
+            Hyperedges superclasses = swgraph.instancesOf(partId,"",Hypergraph::TraversalDirection::DOWN);
+            result << "\t\t" << swgraph.get(*superclasses.begin())->label() << " " << swgraph.get(partId)->label() << partId << "\n";
+        }
+
+        // Generate main function signature
         result << "\n\t\t// Generate function\n";
         result << "\t\tbool operator () (\n";
-        for (auto inputId : myInputIds)
+        for (auto inputId : inputs)
         {
             // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
             // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
-            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.inputClasses());
-            interfaceIds.erase(Software::Graph::InterfaceId);
+            Hyperedges interfaceIds = interfacesOfPort[inputId];
             std::string typeOfInput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {
@@ -145,16 +157,13 @@ int main (int argc, char **argv)
                 typeOfInput = swgraph.get(*interfaceIds.begin())->label();
             }
             result << "\t\t\tconst " << typeOfInput << "& " << swgraph.get(inputId)->label() << ",\n";
-            // Put input classes to the interface classes we need later
-            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
         }
         // Handle Outputs
-        for (auto outputId : myOutputIds)
+        for (auto outputId : outputs)
         {
             // This input is an INSTANCE-OF some CLASS X which is a subtype of an INTERFACE SUBCLASS and the INPUT CLASS.
             // To get the INTERFACE SUBCLASS, we have to get rid of CLASS X, INPUT CLASS and INTERFACE CLASS.
-            auto interfaceIds = subtract(swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN), swgraph.outputClasses());
-            interfaceIds.erase(Software::Graph::InterfaceId);
+            Hyperedges interfaceIds = interfacesOfPort[outputId];
             std::string typeOfOutput = "UNDEFINED";
             if (interfaceIds.size() > 1)
             {
@@ -166,14 +175,27 @@ int main (int argc, char **argv)
                 typeOfOutput = swgraph.get(*interfaceIds.begin())->label();
             }
             result << "\t\t\t" << typeOfOutput << "& " << swgraph.get(outputId)->label() << ",\n";
-            myInterfaceClassIds.insert(interfaceIds.begin(), interfaceIds.end());
         }
-        // Generate a dummy
+        // Create evaluation function
         result << "\t\t\tvoid *ctx)\n";
         result << "\t\t{\n";
-        result << "\t\t\t// Implement algorithm here\n";
-        result << "\t\t\treturn false;\n";
+        if (!parts.size())
+        {
+            // Generate a dummy
+            result << "\t\t\t// Implement atomic algorithm here\n";
+            result << "\t\t\treturn false;\n";
+        } else {
+            // TODO: How do we call the parts in the correct way?
+            // a) start with a queue of all input parts (initial)
+            // b) then perform BFS and whenever we visit a node we call it, passing values from previous nodes and storing results
+            for (auto partId : parts)
+            {
+                result << "\t\t\t//Call " << swgraph.get(partId)->label() << partId << "\n";
+            }
+        }
         result << "\t\t}\n";
+
+        // Close class def
         result << "};\n";
         result << "#endif\n";
 
