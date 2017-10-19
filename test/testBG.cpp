@@ -13,16 +13,16 @@ int main(void)
 
     auto sumClass = swgraph.algorithmClasses("SUM");
     auto divClass = swgraph.algorithmClasses("DIVIDE");
-    auto edgeClass = swgraph.algorithmClasses("EDGE");
+    //auto edgeClass = swgraph.algorithmClasses("EDGE");
 
     // Deep instantiation of a sum and a div algorithm
     auto sum = swgraph.instantiateDeepFrom(sumClass);
     auto div = swgraph.instantiateDeepFrom(divClass);
-    auto edge = swgraph.instantiateDeepFrom(edgeClass);
+    //auto edge = swgraph.instantiateDeepFrom(edgeClass);
 
     // Conncet the merged output of sum with the x input of div
-    swgraph.depends(swgraph.childrenOf(edge,"in"), swgraph.childrenOf(sum,"merged"));
-    swgraph.depends(swgraph.childrenOf(div,"x"), swgraph.childrenOf(edge,"out"));
+    swgraph.depends(swgraph.childrenOf(div,"x"), swgraph.childrenOf(sum,"merged"));
+    //swgraph.depends(swgraph.childrenOf(div,"x"), swgraph.childrenOf(edge,"out"));
 
     // Create a new class of algorithm which is a subtype of SUBGRAPH
     swgraph.isA(swgraph.createAlgorithm("myFirstSubgraph"), swgraph.algorithmClasses("SUBGRAPH"));
