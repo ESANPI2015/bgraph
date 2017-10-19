@@ -75,6 +75,16 @@ target_link_libraries(gen_vhdl_entity swgraph)
 install(TARGETS gen_vhdl_entity
 RUNTIME DESTINATION bin)
 
+add_executable(def_task_graph tools/def_task_graph.cpp)
+target_link_libraries(def_task_graph swgraph)
+install(TARGETS def_task_graph
+RUNTIME DESTINATION bin)
+
+add_executable(import_task_graph tools/import_task_graph.cpp)
+target_link_libraries(import_task_graph swgraph)
+install(TARGETS import_task_graph
+RUNTIME DESTINATION bin)
+
 # pkg-config, to be installed:
 configure_file(${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION lib/pkgconfig)

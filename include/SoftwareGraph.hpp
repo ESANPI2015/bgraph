@@ -15,7 +15,7 @@ namespace Software {
         ALGORITHM, INPUT, OUTPUT, INTERFACE (for logical specification and skeleton generation)
         IMPLEMENTATION, DATATYPE, LANGUAGE (for storing already available implementations of algorithms in different languages)
     The domain is encoded as follows:
-    
+
     (ALGORITHM -- has --> INTERFACE)                    optional, inferrable
     INPUT -- is-a --> INTERFACE
     OUTPUT -- is-a --> INTERFACE
@@ -35,7 +35,7 @@ namespace Software {
     If some X is a ALGORITHM then there exists a path of IS-A relations from X to ALGORITHM
 
     Some example:
-    
+
         |---------- realizes -- disparity.c -- expressedIn --> C
         v
     DisparityMap -- needs --> left -- is-a --> Input
@@ -110,7 +110,7 @@ class Graph : public CommonConceptGraph
         Hyperedges implementations(const std::string& name="", const std::string& className="");
         Hyperedges datatypes(const std::string& name="", const std::string& className="");
         Hyperedges languages(const std::string& name="", const std::string& className="");
-    
+
         // Facts
         // NOTE: Only the multidimensionals are used here (more generic)
         // Algorithms & I/O/P
