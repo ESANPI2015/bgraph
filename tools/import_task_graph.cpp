@@ -78,6 +78,8 @@ int main (int argc, char **argv)
             std::string type = node["type"].as<std::string>();
             // First: Find the superclass
             Hyperedges super = swgraph.find(type);
+            if (!super.size())
+                continue;
             // Second: Instantiate from that superclass
             Hyperedges sub = swgraph.instantiateFrom(super, label);
             old2new[id] = sub;

@@ -11,7 +11,7 @@ int main(void)
 
     // Some constants
     // Supported Languages
-    auto cId = swgraph.instantiateFrom(swgraph.createLanguage("C"));
+    auto cId = swgraph.createLanguage("C");
 
     // Upper classes
     auto taskClassId = swgraph.createAlgorithm("system_modelling::task_graph::Task"); // Implementation?
@@ -20,12 +20,15 @@ int main(void)
     auto portClassId = swgraph.createInterface("system_modelling::task_graph::Port");
     auto inputClassId = swgraph.createInput(portClassId, "system_modelling::task_graph::InputPort");
     auto outputClassId = swgraph.createOutput(portClassId, "system_modelling::task_graph::OutputPort");
+    auto dataTypeId = swgraph.createDatatype("system_modelling::graph_basics::DataType");
 
     // Now the language def
     swgraph.isA(networkClassId, taskClassId); // Every network is a task on its own
     // A port connection has one input and one output: It is a channel
     swgraph.needs(transportClassId, swgraph.instantiateInput(inputClassId,"IN"));
     swgraph.provides(transportClassId, swgraph.instantiateOutput(outputClassId,"OUT"));
+    swgraph.represents(dataTypeId, portClassId);
+    swgraph.expressedIn(dataTypeId, cId);
 
     // Upper relations
     // PortConnection -- ConnectsTo --> OutputPort  =   PortConnection.InputPort <-- dependsOn --> OutputPort
@@ -35,9 +38,13 @@ int main(void)
     auto transportConnectsPortId = swgraph.relate(transportClassId, portClassId, "system_modelling::graph_basics::ConnectsTo");
     auto taskIsPartOfId = swgraph.relate(taskClassId, networkClassId, "system_modelling::graph_basics::PartOf");
     auto taskContainsId = swgraph.relate(networkClassId, taskClassId, "system_modelling::graph_basics::Contains");
+    auto portHasUniqueTypeId = swgraph.relate(portClassId, dataTypeId, "system_modelling::graph_basics::HasUnique");
 
     // Refer new relations to our common and/or special relations!
     swgraph.subrelationOf(taskHasPortId, Hyperedges{Software::Graph::HasAId});
+    // FIXME: This is the only way ... Otherwise we have to treat instances of datatype as classes!
+    // One way to do it (once we have an inference engine is to say: Whenever a port has a type, transform it to port is-of type!
+    swgraph.subrelationOf(portHasUniqueTypeId, Hyperedges{CommonConceptGraph::HasAId});
     swgraph.subrelationOf(taskInstanceOfTemplateId, Hyperedges{CommonConceptGraph::InstanceOfId});
     swgraph.subrelationOf(transportConnectsPortId, Hyperedges{CommonConceptGraph::ConnectsId});
     swgraph.subrelationOf(taskIsPartOfId, Hyperedges{CommonConceptGraph::PartOfId});
