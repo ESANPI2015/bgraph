@@ -63,6 +63,8 @@ int main (int argc, char **argv)
     // Get all algorithm classes (without overall superclass)
     Hyperedges algorithms = swgraph.algorithmClasses(classLabel);
     algorithms.erase(Software::Graph::AlgorithmId);
+    Hyperedges myLanguages = swgraph.languages("VHDL");
+    Hyperedges typesOfLang = swgraph.from(intersect(swgraph.relationsOf(Hyperedges{myLanguages}), swgraph.factsOf(Software::Graph::ExpressedInId)));
 
     // For each of these algorithms
     for (auto algorithmId : algorithms)
@@ -139,15 +141,13 @@ int main (int argc, char **argv)
         result << "end BEHAVIORAL;\n";
 
         // Handle the collected interface classes
-        Hyperedges myLanguages = swgraph.languages("VHDL");
         result << "\n-- Package def --\n";
         result << "package " << algorithm->label() << "_types is\n";
         for (auto interfaceId : myInterfaceClassIds)
         {
             auto interface = swgraph.get(interfaceId);
             std::string datatypeName;
-            Hyperedges typesOfIf = swgraph.from(intersect(swgraph.relationsOf(interfaceId), swgraph.factsOf(Software::Graph::RepresentsId)));
-            Hyperedges typesOfLang = swgraph.from(intersect(swgraph.relationsOf(myLanguages), swgraph.factsOf(Software::Graph::ExpressedInId)));
+            Hyperedges typesOfIf = swgraph.from(intersect(swgraph.relationsOf(Hyperedges{interfaceId}), swgraph.factsOf(Software::Graph::RepresentsId)));
             Hyperedges dataTypes = intersect(typesOfIf, typesOfLang);
             for (auto typeId : dataTypes)
             {

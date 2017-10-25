@@ -50,22 +50,22 @@ class Graph : public CommonConceptGraph
 {
     public:
         // Identifiers for the main concepts
-        static const unsigned AlgorithmId;
-        static const unsigned InterfaceId;
-        static const unsigned InputId;
-        static const unsigned OutputId;
-        static const unsigned ImplementationId;
-        static const unsigned LanguageId;
-        static const unsigned DatatypeId;
+        static const UniqueId AlgorithmId;
+        static const UniqueId InterfaceId;
+        static const UniqueId InputId;
+        static const UniqueId OutputId;
+        static const UniqueId ImplementationId;
+        static const UniqueId LanguageId;
+        static const UniqueId DatatypeId;
         // Ids for identifiing main relations
-        static const unsigned IsAId;
-        static const unsigned HasAId;
-        static const unsigned NeedsId;
-        static const unsigned ProvidesId;
-        static const unsigned DependsOnId;
-        static const unsigned ExpressedInId;
-        static const unsigned RealizesId;
-        static const unsigned RepresentsId;
+        static const UniqueId IsAId;
+        static const UniqueId HasAId;
+        static const UniqueId NeedsId;
+        static const UniqueId ProvidesId;
+        static const UniqueId DependsOnId;
+        static const UniqueId ExpressedInId;
+        static const UniqueId RealizesId;
+        static const UniqueId RepresentsId;
 
         // Constructor/Destructor
         Graph();
@@ -79,17 +79,17 @@ class Graph : public CommonConceptGraph
         // NOTE: Create classes
         Hyperedges createAlgorithm(const std::string& name="Algorithm");
         Hyperedges createInterface(const std::string& name="Interface");
-        Hyperedges createInput(const unsigned interfaceId, const std::string& name="Input"); // TODO: Needed?
-        Hyperedges createOutput(const unsigned interfaceId, const std::string& name="Output"); // TODO: Needed?
+        Hyperedges createInput(const UniqueId interfaceId, const std::string& name="Input"); // TODO: Needed?
+        Hyperedges createOutput(const UniqueId interfaceId, const std::string& name="Output"); // TODO: Needed?
         Hyperedges createInput(const Hyperedges& interfaceIds, const std::string& name="Input"); // TODO: Needed?
         Hyperedges createOutput(const Hyperedges& interfaceIds, const std::string& name="Output"); // TODO: Needed?
         Hyperedges createImplementation(const std::string& name="Implementation"); // TODO: Needed?
         Hyperedges createDatatype(const std::string& name="DataType");
         Hyperedges createLanguage(const std::string& name="Language"); // TODO: Needed?
         // NOTE: Create instances
-        //Hyperedges instantiateAlgorithm(const unsigned superId, const std::string& name="");
-        Hyperedges instantiateInput(const unsigned superId, const std::string& name="");
-        Hyperedges instantiateOutput(const unsigned superId, const std::string& name="");
+        //Hyperedges instantiateAlgorithm(const UniqueId superId, const std::string& name="");
+        Hyperedges instantiateInput(const UniqueId superId, const std::string& name="");
+        Hyperedges instantiateOutput(const UniqueId superId, const std::string& name="");
         Hyperedges instantiateInput(const Hyperedges& superId, const std::string& name="");
         Hyperedges instantiateOutput(const Hyperedges& superId, const std::string& name="");
 

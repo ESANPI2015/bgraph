@@ -68,6 +68,8 @@ int main (int argc, char **argv)
     // Get all algorithm classes (without overall superclass)
     Hyperedges algorithms = swgraph.algorithmClasses(classLabel);
     algorithms.erase(Software::Graph::AlgorithmId);
+    Hyperedges myLanguages = swgraph.languages("C");
+    Hyperedges typesOfLang = swgraph.from(intersect(swgraph.relationsOf(myLanguages), swgraph.factsOf(Software::Graph::ExpressedInId)));
 
     // For each of these algorithms
     for (auto algorithmId : algorithms)
@@ -76,7 +78,6 @@ int main (int argc, char **argv)
         auto algorithm = swgraph.get(algorithmId);
 
         // Get all properties needed for code generation
-        Hyperedges myLanguages = swgraph.languages("C");
         // TODO: Do we want transitive closure? Actually we want to REUSE code from parts of parts, right?
         Hyperedges parts = swgraph.partsOf(Hyperedges{algorithmId});
         parts.erase(algorithmId);
@@ -85,8 +86,8 @@ int main (int argc, char **argv)
         Hyperedges inputs = intersect(children, swgraph.inputs());
         Hyperedges outputs = intersect(children, swgraph.outputs());
         Hyperedges allInterfaces;
-        std::map< unsigned, Hyperedges > interfacesOfPort;
-        for (unsigned inputId : inputs)
+        std::map< UniqueId, Hyperedges > interfacesOfPort;
+        for (UniqueId inputId : inputs)
         {
             Hyperedges interfaces;
             interfaces = swgraph.subclassesOf(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN);
@@ -95,7 +96,7 @@ int main (int argc, char **argv)
             interfacesOfPort[inputId] = interfaces;
             allInterfaces.insert(interfaces.begin(), interfaces.end());
         }
-        for (unsigned outputId : outputs)
+        for (UniqueId outputId : outputs)
         {
             Hyperedges interfaces;
             interfaces = swgraph.subclassesOf(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::DOWN),"",Hypergraph::TraversalDirection::DOWN);
@@ -118,8 +119,7 @@ int main (int argc, char **argv)
         {
             auto interface = swgraph.get(interfaceId);
             std::string datatypeName;
-            Hyperedges typesOfIf = swgraph.from(intersect(swgraph.relationsOf(interfaceId), swgraph.factsOf(Software::Graph::RepresentsId)));
-            Hyperedges typesOfLang = swgraph.from(intersect(swgraph.relationsOf(myLanguages), swgraph.factsOf(Software::Graph::ExpressedInId)));
+            Hyperedges typesOfIf = swgraph.from(intersect(swgraph.relationsOf(Hyperedges{interfaceId}), swgraph.factsOf(Software::Graph::RepresentsId)));
             Hyperedges dataTypes = intersect(typesOfIf, typesOfLang);
             for (auto typeId : dataTypes)
             {
@@ -132,7 +132,7 @@ int main (int argc, char **argv)
 
         // Instantiate parts (to not confuse C++, partId is also included)
         result << "\n\t\t// Instantiate parts\n";
-        for (unsigned partId : parts)
+        for (UniqueId partId : parts)
         {
             Hyperedges superclasses = swgraph.instancesOf(partId,"",Hypergraph::TraversalDirection::DOWN);
             result << "\t\t" << swgraph.get(*superclasses.begin())->label() << " " << swgraph.get(partId)->label() << partId << "\n";

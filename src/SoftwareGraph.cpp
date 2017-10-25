@@ -4,22 +4,22 @@ namespace Software {
 
 
 // Concept Ids
-const unsigned Graph::InterfaceId       = 2001;
-const unsigned Graph::InputId           = 2002;
-const unsigned Graph::OutputId          = 2003;
-const unsigned Graph::AlgorithmId       = 2000;
-const unsigned Graph::ImplementationId  = 2004;
-const unsigned Graph::DatatypeId        = 2005;
-const unsigned Graph::LanguageId        = 2006;
+const UniqueId Graph::InterfaceId       = "Software::Graph::Interface";
+const UniqueId Graph::InputId           = "Software::Graph::Input";
+const UniqueId Graph::OutputId          = "Software::Graph::Output";
+const UniqueId Graph::AlgorithmId       = "Software::Graph::Algorithm";
+const UniqueId Graph::ImplementationId  = "Software::Graph::Implementation";
+const UniqueId Graph::DatatypeId        = "Software::Graph::Datatype";
+const UniqueId Graph::LanguageId        = "Software::Graph::Language";
 // Relation Ids
-const unsigned Graph::IsAId             = CommonConceptGraph::IsAId;
-const unsigned Graph::HasAId            = 2101;
-const unsigned Graph::DependsOnId       = 2102;
-const unsigned Graph::NeedsId           = 2103;
-const unsigned Graph::ProvidesId        = 2104;
-const unsigned Graph::ExpressedInId     = 2105;
-const unsigned Graph::RealizesId        = 2106;
-const unsigned Graph::RepresentsId      = 2108;
+const UniqueId Graph::IsAId             = CommonConceptGraph::IsAId;
+const UniqueId Graph::HasAId            = "Software::Graph::HasA";
+const UniqueId Graph::DependsOnId       = "Software::Graph::DependsOn";
+const UniqueId Graph::NeedsId           = "Software::Graph::Needs";
+const UniqueId Graph::ProvidesId        = "Software::Graph::Provides";
+const UniqueId Graph::ExpressedInId     = "Software::Graph::Expressed";
+const UniqueId Graph::RealizesId        = "Software::Graph::Realizes";
+const UniqueId Graph::RepresentsId      = "Software::Graph::Represents";
 
 // GRAPH STUFF
 void Graph::createMainConcepts()
@@ -34,26 +34,26 @@ void Graph::createMainConcepts()
     Conceptgraph::create(Graph::LanguageId, "LANGUAGE");
 
     // Relations
-    Conceptgraph::relate(Graph::HasAId, Graph::AlgorithmId, Graph::InterfaceId, "HAS-A");
+    Conceptgraph::relate(Graph::HasAId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::InterfaceId}, "HAS-A");
     CommonConceptGraph::subrelationOf(Graph::HasAId, CommonConceptGraph::HasAId);
 
-    Conceptgraph::relate(Graph::DependsOnId, Graph::InputId, Graph::OutputId, "DEPENDS-ON");
+    Conceptgraph::relate(Graph::DependsOnId, Hyperedges{Graph::InputId}, Hyperedges{Graph::OutputId}, "DEPENDS-ON");
     CommonConceptGraph::subrelationOf(Graph::DependsOnId, CommonConceptGraph::ConnectsId);
 
-    Conceptgraph::relate(Graph::NeedsId, Graph::AlgorithmId, Graph::InputId, "NEEDS");
+    Conceptgraph::relate(Graph::NeedsId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::InputId}, "NEEDS");
     CommonConceptGraph::subrelationOf(Graph::NeedsId, Graph::HasAId);
 
-    Conceptgraph::relate(Graph::ProvidesId, Graph::AlgorithmId, Graph::OutputId, "PROVIDES");
+    Conceptgraph::relate(Graph::ProvidesId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::OutputId}, "PROVIDES");
     CommonConceptGraph::subrelationOf(Graph::ProvidesId, Graph::HasAId);
 
-    Conceptgraph::relate(Graph::ExpressedInId, Graph::ImplementationId, Graph::LanguageId, "EXPRESSED-IN");
+    Conceptgraph::relate(Graph::ExpressedInId, Hyperedges{Graph::ImplementationId}, Hyperedges{Graph::LanguageId}, "EXPRESSED-IN");
     Conceptgraph::get(Graph::ExpressedInId)->from(Graph::DatatypeId); // OK :)
     // CommonConceptGraph::subrelationOf(Graph::ExpressedInId, CommonConceptGraph::PartOfId); // TODO: True?
 
-    Conceptgraph::relate(Graph::RealizesId, Graph::ImplementationId, Graph::AlgorithmId, "REALIZES");
-    // CommonConceptGraph::subrelationOf(Graph::RealizesId, CommonConceptGraph::IsAId); // TODO: True?
-    Conceptgraph::relate(Graph::RepresentsId, Graph::DatatypeId, Graph::InterfaceId, "REPRESENTS");
-    // CommonConceptGraph::subrelationOf(Graph::RepresentsId, CommonConceptGraph::IsAId); // TODO: True?
+    Conceptgraph::relate(Graph::RealizesId, Hyperedges{Graph::ImplementationId}, Hyperedges{Graph::AlgorithmId}, "REALIZES");
+    CommonConceptGraph::subrelationOf(Graph::RealizesId, CommonConceptGraph::IsAId); // Every Implementation is also an Algorithm
+    Conceptgraph::relate(Graph::RepresentsId, Hyperedges{Graph::DatatypeId}, Hyperedges{Graph::InterfaceId}, "REPRESENTS");
+    CommonConceptGraph::subrelationOf(Graph::RepresentsId, CommonConceptGraph::IsAId); // Every Datatype is also a (Software)Interface
 }
 
 Graph::Graph()
@@ -170,12 +170,12 @@ Hyperedges Graph::createAlgorithm(const std::string& name)
     return a;
 }
 
-Hyperedges Graph::createInput(const unsigned interfaceId, const std::string& name)
+Hyperedges Graph::createInput(const UniqueId interfaceId, const std::string& name)
 {
     return createInput(Hyperedges{interfaceId}, name);
 }
 
-Hyperedges Graph::createOutput(const unsigned interfaceId, const std::string& name)
+Hyperedges Graph::createOutput(const UniqueId interfaceId, const std::string& name)
 {
     return createOutput(Hyperedges{interfaceId}, name);
 }
@@ -225,12 +225,12 @@ Hyperedges Graph::createLanguage(const std::string& name)
     return a;
 }
 
-Hyperedges Graph::instantiateInput(const unsigned superId, const std::string& name)
+Hyperedges Graph::instantiateInput(const UniqueId superId, const std::string& name)
 {
     return instantiateInput(Hyperedges{superId}, name);
 }
 
-Hyperedges Graph::instantiateOutput(const unsigned superId, const std::string& name)
+Hyperedges Graph::instantiateOutput(const UniqueId superId, const std::string& name)
 {
     return instantiateOutput(Hyperedges{superId}, name);
 }
