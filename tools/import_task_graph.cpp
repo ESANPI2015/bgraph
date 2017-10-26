@@ -69,30 +69,40 @@ int main (int argc, char **argv)
     const YAML::Node& nodes(import["nodes"]);
     if (nodes.IsDefined())
     {
-        std::map<unsigned, Hyperedges> old2new;
+        std::map<UniqueId, Hyperedges> old2new;
         for (auto it = nodes.begin(); it != nodes.end(); it++)
         {
             const YAML::Node node(*it);
-            unsigned id = node["id"].as<unsigned>();
+            UniqueId id = node["id"].as<UniqueId>();
             std::string label = node["label"].as<std::string>();
             std::string type = node["type"].as<std::string>();
             // First: Find the superclass
             Hyperedges super = swgraph.find(type);
             if (!super.size())
                 continue;
-            // Second: Instantiate from that superclass
-            Hyperedges sub = swgraph.instantiateFrom(super, label);
+            // Second:
+            // system_modelling only knows instances but no subclasses
+            // Unfortunately, we now have to fix here some inconsistencies:
+            // PortConnections have to be INSTANTIATED
+            Hyperedges sub;
+            if (type == "system_modelling::task_graph::PortConnection")
+            {
+                sub = swgraph.instantiateFrom(super, label);
+            } else {
+                sub = swgraph.create(label);
+            }
+            swgraph.isA(sub, super);
             old2new[id] = sub;
         }
         const YAML::Node& edges(import["edges"]);
         for (auto it = edges.begin(); it != edges.end(); it++)
         {
             const YAML::Node edge(*it);
-            unsigned id = edge["id"].as<unsigned>();
+            UniqueId id = edge["id"].as<UniqueId>();
             std::string label = edge["label"].as<std::string>();
             std::string type = edge["type"].as<std::string>();
-            unsigned fromId = edge["fromId"].as<unsigned>();
-            unsigned toId = edge["toId"].as<unsigned>();
+            UniqueId fromId = edge["fromId"].as<UniqueId>();
+            UniqueId toId = edge["toId"].as<UniqueId>();
             // First: Find the superclass
             Hyperedges super = swgraph.relations(type);
             if (!super.size())
