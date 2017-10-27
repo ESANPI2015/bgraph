@@ -49,94 +49,102 @@ int main(void)
     // Build up the behavior graph components aka Nodes
     // 1-to-1
     Hyperedges id1, id2;
-    auto pipeId = swgraph.createAlgorithm("PIPE");
-    swgraph.isA(pipeId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
-    swgraph.needs(pipeId, id1);
-    swgraph.provides(pipeId, id2);
+
+    auto inputNodeId = swgraph.createAlgorithm("INPUT");
+    swgraph.isA(inputNodeId, nodeClassId);
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
+    swgraph.needs(inputNodeId, id1);
+    swgraph.provides(inputNodeId, id2);
+
+    auto outputNodeId = swgraph.createAlgorithm("OUTPUT");
+    swgraph.isA(outputNodeId, nodeClassId);
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
+    swgraph.needs(outputNodeId, id1);
+    swgraph.provides(outputNodeId, id2);
 
     auto divId = swgraph.createAlgorithm("DIVIDE");
     swgraph.isA(divId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(divId, id1);
     swgraph.provides(divId, id2);
 
     auto sinId = swgraph.createAlgorithm("SIN");
     swgraph.isA(sinId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(sinId, id1);
     swgraph.provides(sinId, id2);
 
     auto cosId = swgraph.createAlgorithm("COS");
     swgraph.isA(cosId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(cosId, id1);
     swgraph.provides(cosId, id2);
 
     auto tanId = swgraph.createAlgorithm("TAN");
     swgraph.isA(tanId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(tanId, id1);
     swgraph.provides(tanId, id2);
 
     auto tanhId = swgraph.createAlgorithm("TANH");
     swgraph.isA(tanhId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(tanhId, id1);
     swgraph.provides(tanhId, id2);
 
     auto acosId = swgraph.createAlgorithm("ACOS");
     swgraph.isA(acosId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(acosId, id1);
     swgraph.provides(acosId, id2);
 
     auto asinId = swgraph.createAlgorithm("ASIN");
     swgraph.isA(asinId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(asinId, id1);
     swgraph.provides(asinId, id2);
 
     auto atanId = swgraph.createAlgorithm("ATAN");
     swgraph.isA(atanId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(atanId, id1);
     swgraph.provides(atanId, id2);
 
     auto logId = swgraph.createAlgorithm("LOG");
     swgraph.isA(logId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(logId, id1);
     swgraph.provides(logId, id2);
 
     auto expId = swgraph.createAlgorithm("EXP");
     swgraph.isA(expId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(expId, id1);
     swgraph.provides(expId, id2);
 
     auto absId = swgraph.createAlgorithm("ABS");
     swgraph.isA(absId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(absId, id1);
     swgraph.provides(absId, id2);
 
     auto sqrtId = swgraph.createAlgorithm("SQRT");
     swgraph.isA(sqrtId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateOutput(outputClassId, "y");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(sqrtId, id1);
     swgraph.provides(sqrtId, id2);
 
@@ -144,25 +152,25 @@ int main(void)
     Hyperedges id3;
     auto atan2Id = swgraph.createAlgorithm("ATAN2");
     swgraph.isA(atan2Id, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateInput(inputClassId, "y");
-    id3 = swgraph.instantiateOutput(outputClassId, "z");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateInput(inputClassId, "1");
+    id3 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(atan2Id, unite(id1, id2));
     swgraph.provides(atan2Id, id3);
 
     auto powId = swgraph.createAlgorithm("POW");
     swgraph.isA(powId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateInput(inputClassId, "y");
-    id3 = swgraph.instantiateOutput(outputClassId, "z");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateInput(inputClassId, "1");
+    id3 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(powId, unite(id1, id2));
     swgraph.provides(powId, id3);
 
     auto modId = swgraph.createAlgorithm("MOD");
     swgraph.isA(modId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "x");
-    id2 = swgraph.instantiateInput(inputClassId, "y");
-    id3 = swgraph.instantiateOutput(outputClassId, "z");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateInput(inputClassId, "1");
+    id3 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(modId, unite(id1, id2));
     swgraph.provides(modId, id3);
 
@@ -170,19 +178,19 @@ int main(void)
     Hyperedges id4;
     auto greaterId = swgraph.createAlgorithm(">0");
     swgraph.isA(greaterId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "condition");
-    id2 = swgraph.instantiateInput(inputClassId, "true");
-    id3 = swgraph.instantiateInput(inputClassId, "false");
-    id4 = swgraph.instantiateOutput(outputClassId, "result");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateInput(inputClassId, "1");
+    id3 = swgraph.instantiateInput(inputClassId, "2");
+    id4 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(greaterId, unite(unite(id1, id2), id3));
     swgraph.provides(greaterId, id4);
 
     auto equalId = swgraph.createAlgorithm("==0");
     swgraph.isA(equalId, nodeClassId);
-    id1 = swgraph.instantiateInput(inputClassId, "condition");
-    id2 = swgraph.instantiateInput(inputClassId, "true");
-    id3 = swgraph.instantiateInput(inputClassId, "false");
-    id4 = swgraph.instantiateOutput(outputClassId, "result");
+    id1 = swgraph.instantiateInput(inputClassId, "0");
+    id2 = swgraph.instantiateInput(inputClassId, "1");
+    id3 = swgraph.instantiateInput(inputClassId, "2");
+    id4 = swgraph.instantiateOutput(outputClassId, "0");
     swgraph.needs(equalId, unite(unite(id1, id2), id3));
     swgraph.provides(equalId, id4);
 
