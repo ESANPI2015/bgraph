@@ -65,6 +65,11 @@ target_link_libraries(def_bg_components swgraph)
 install(TARGETS def_bg_components
 RUNTIME DESTINATION bin)
 
+add_executable(import_behavior_graph tools/import_behavior_graph.cpp)
+target_link_libraries(import_behavior_graph swgraph)
+install(TARGETS import_behavior_graph
+RUNTIME DESTINATION bin)
+
 add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
 target_link_libraries(gen_cpp_class swgraph)
 install(TARGETS gen_cpp_class
