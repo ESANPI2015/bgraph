@@ -89,7 +89,7 @@ int main (int argc, char **argv)
 
     // Prerequisites
     Hyperedges realInputClassId = swgraph.inputClasses("RealInput");
-    Hyperedges realOutputClassId = swgraph.inputClasses("RealOutput");
+    Hyperedges realOutputClassId = swgraph.outputClasses("RealOutput");
     Hyperedges nodeClassId = swgraph.algorithmClasses("NODE");
     Hyperedges mergeClassId = swgraph.algorithmClasses("MERGE");
     Hyperedges edgeClassId = swgraph.algorithmClasses("EDGE");
@@ -169,6 +169,9 @@ int main (int argc, char **argv)
                             swgraph.provides(sub, swgraph.instantiateOutput(realOutputClassId, outputIdx));
                             std::cout << "Create output " << outputIdx << "\n";
                         }
+                    } else {
+                        swgraph.provides(sub, swgraph.instantiateOutput(realOutputClassId, "0"));
+                        std::cout << "Create at least one output 0\n";
                     }
                 }
                 // Use the found or created subclass for instantiation
@@ -177,7 +180,7 @@ int main (int argc, char **argv)
             // FOR ATOMIC & OTHER NODES:
             // For pure bg nodes, the things will be instances!
             std::cout << "Instantiating " << label << " of type " << super << "\n";
-            sub = swgraph.instantiateDeepFrom(super, label);
+            sub = swgraph.instantiateDeepFrom(super, label); // FIXME: Slow! Use instantiateFrom instead!
             old2new[id] = sub;
             // Third: For all inputs, we have to create the "correct" merge nodes and connect them
             if (inputs.IsDefined())
@@ -205,7 +208,7 @@ int main (int argc, char **argv)
                         continue;
                     }
                     std::cout << "Instantiating merge " << mergeSuper << " for input " << inputIdx << "\n";
-                    Hyperedges mergeInst = swgraph.instantiateDeepFrom(mergeSuper);
+                    Hyperedges mergeInst = swgraph.instantiateDeepFrom(mergeSuper); // FIXME: Slow! Use instantiateFrom instead!!!
                     Hyperedges outputsOfMerge = getOutputsOf(swgraph, mergeInst, "merged");
                     swgraph.depends(inputsOfSub, outputsOfMerge);
                     // TODO: For later use we could remember the input merge instances per input
@@ -235,7 +238,7 @@ int main (int argc, char **argv)
                 continue;
             }
             // Second: Instantiate from that superclass
-            Hyperedges edgeInstance = swgraph.instantiateFrom(super, label);
+            Hyperedges edgeInstance = swgraph.instantiateDeepFrom(super, label);
             if (!edgeInstance.size())
             {
                 std::cout << "Warning: Could not instantiate edge with weight " << label << "\n";
@@ -245,7 +248,17 @@ int main (int argc, char **argv)
             Hyperedges inputsOfEdge = getInputsOf(swgraph, edgeInstance, "in");
             Hyperedges outputsOfEdge = getOutputsOf(swgraph, edgeInstance, "out");
             Hyperedges outputsOfSource = getOutputsOf(swgraph, fromNodeId, fromNodeOutputIdx);
+            if (!outputsOfSource.size())
+            {
+                std::cout << "Warning: Source " << fromNodeId << " has no output " << fromNodeOutputIdx << "\n";
+                continue;
+            }
             Hyperedges inputsOfTarget = getInputsOf(swgraph, toNodeId, toNodeInputIdx);
+            if (!inputsOfTarget.size())
+            {
+                std::cout << "Warning: Target " << toNodeId << " has no input " << toNodeInputIdx << "\n";
+                continue;
+            }
             Hyperedges mergesOfTargetInputs = getMergesOfInput(swgraph, inputsOfTarget, ""); // any merge
             Hyperedges inputsOfMerge = getInputsOf(swgraph,mergesOfTargetInputs,"");
             // Find unconnected input
@@ -266,7 +279,7 @@ int main (int argc, char **argv)
             // Connect
             std::cout << "Connecting " << fromNodeId << "," << fromNodeOutputIdx << " to " << toNodeId << "," << toNodeInputIdx << "\n";
             swgraph.depends(inputsOfEdge, outputsOfSource);
-            swgraph.depends(outputsOfEdge, unconnectedInputs);
+            swgraph.depends(unconnectedInputs, outputsOfEdge);
         }
     }
 

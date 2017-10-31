@@ -21,6 +21,10 @@ int main(void)
     auto inputClassId = swgraph.createInput(portClassId, "system_modelling::task_graph::InputPort");
     auto outputClassId = swgraph.createOutput(portClassId, "system_modelling::task_graph::OutputPort");
     auto dataTypeId = swgraph.createDatatype("system_modelling::graph_basics::DataType");
+    // TODO: We need a class which holds all UNMODELED stuff e.g. configurations/annotations etc.
+    // In system_modelling this is modeled as a TREE OF PROPERTY NODES with DATATYPE and DATAVALUE nodes as leafs!!!
+    // In our model such CONFIGURATIONs should be INTERFACES which already have DEFAULT VALUES (also a TODO!)
+    // We could have an ALGORITHM which assigns CONFIGURATIONS for other ALGORITHMs :D
 
     // Now the language def
     swgraph.isA(networkClassId, taskClassId); // Every network is a task on its own
