@@ -41,11 +41,9 @@ int main(void)
     // NODE class represents the primitive nodes of the behavior graph domain
     // MERGE class represents the merge functions which preprocess the incoming data before it is used by nodes
     // EDGE class represents the computations performed by edges - currently this should be a simple multiplication
-    auto nodeClassId = swgraph.createAlgorithm("NODE");
-    auto mergeClassId = swgraph.createAlgorithm("MERGE");
-    auto edgeClassId = swgraph.createAlgorithm("EDGE");
 
     // The NODE class
+    auto nodeClassId = swgraph.createAlgorithm("NODE");
     // Build up the behavior graph components aka Nodes
     // 1-to-1
     Hyperedges id1, id2;
@@ -195,6 +193,7 @@ int main(void)
     swgraph.provides(equalId, id4);
 
     // The MERGE class
+    auto mergeClassId = swgraph.createAlgorithm("MERGE");
     // (UP-TO-N)-to-1 aka Merges
     // they also have "bias" and "defaultValue"
     Hyperedges inputIds;
@@ -278,7 +277,6 @@ int main(void)
     // The EDGE class
     inputIds.clear();
     auto edgeId = swgraph.createAlgorithm("EDGE");
-    swgraph.isA(edgeId, edgeClassId);
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "in"));
     inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "weight"));
     id1 = swgraph.instantiateOutput(outputClassId, "out");
