@@ -43,9 +43,9 @@ Hyperedges getMergesOfInput(Software::Graph& swgraph, const Hyperedges& inputs, 
     Hyperedges allMerges = swgraph.instancesOf(swgraph.subclassesOf(swgraph.algorithmClasses("MERGE")), label);
     Hyperedges allEndpoints = swgraph.endpointsOf(inputs, "merged"); // all outputs of some merges?
     Hyperedges allParentsOfEndpoints = swgraph.childrenOf(allEndpoints, label, Software::Graph::TraversalDirection::UP);
-    std::cout << allMerges << std::endl;
-    std::cout << allEndpoints << std::endl;
-    std::cout << allParentsOfEndpoints << std::endl;
+    //std::cout << allMerges << std::endl;
+    //std::cout << allEndpoints << std::endl;
+    //std::cout << allParentsOfEndpoints << std::endl;
     return intersect(allMerges, allParentsOfEndpoints);
 }
 
@@ -180,7 +180,7 @@ int main (int argc, char **argv)
             // FOR ATOMIC & OTHER NODES:
             // For pure bg nodes, the things will be instances!
             std::cout << "Instantiating " << label << " of type " << super << "\n";
-            sub = swgraph.instantiateDeepFrom(super, label); // FIXME: Slow! Use instantiateFrom instead!
+            sub = swgraph.instantiateSuperDeepFrom(super, label);
             old2new[id] = sub;
             // Third: For all inputs, we have to create the "correct" merge nodes and connect them
             if (inputs.IsDefined())
@@ -208,7 +208,7 @@ int main (int argc, char **argv)
                         continue;
                     }
                     std::cout << "Instantiating merge " << mergeSuper << " for input " << inputIdx << "\n";
-                    Hyperedges mergeInst = swgraph.instantiateDeepFrom(mergeSuper); // FIXME: Slow! Use instantiateFrom instead!!!
+                    Hyperedges mergeInst = swgraph.instantiateSuperDeepFrom(mergeSuper);
                     Hyperedges outputsOfMerge = getOutputsOf(swgraph, mergeInst, "merged");
                     swgraph.depends(inputsOfSub, outputsOfMerge);
                     // TODO: For later use we could remember the input merge instances per input
@@ -238,7 +238,7 @@ int main (int argc, char **argv)
                 continue;
             }
             // Second: Instantiate from that superclass
-            Hyperedges edgeInstance = swgraph.instantiateDeepFrom(super, label);
+            Hyperedges edgeInstance = swgraph.instantiateSuperDeepFrom(super, label);
             if (!edgeInstance.size())
             {
                 std::cout << "Warning: Could not instantiate edge with weight " << label << "\n";
