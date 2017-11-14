@@ -38,19 +38,21 @@ int main(void)
     // PortConnection -- ConnectsTo --> OutputPort  =   PortConnection.InputPort <-- dependsOn --> OutputPort
     // PortConnection -- ConnectsTo --> InputPort   =   InputPort <-- dependsOn --> PortConnection.OutputPort
     auto taskHasPortId = swgraph.relate(taskClassId, portClassId, "system_modelling::graph_basics::Has");
-    auto taskInstanceOfTemplateId = swgraph.relate(taskClassId, taskClassId, "system_modelling::graph_basics::InstanceOf");
     auto transportConnectsPortId = swgraph.relate(transportClassId, portClassId, "system_modelling::graph_basics::ConnectsTo");
     auto taskIsPartOfId = swgraph.relate(taskClassId, networkClassId, "system_modelling::graph_basics::PartOf");
     auto taskContainsId = swgraph.relate(networkClassId, taskClassId, "system_modelling::graph_basics::Contains");
     auto portHasUniqueTypeId = swgraph.relate(portClassId, dataTypeId, "system_modelling::graph_basics::HasUnique");
+    auto instanceOfTemplateId = swgraph.relate(Hyperedges{Conceptgraph::IsConceptId}, Hyperedges{Conceptgraph::IsConceptId}, "system_modelling::graph_basics::InstanceOf");
 
     // Refer new relations to our common and/or special relations!
     swgraph.subrelationOf(taskHasPortId, Hyperedges{Software::Graph::HasAId});
     // FIXME: This is the only way ... Otherwise we have to treat instances of datatype as classes!
     // One way to do it (once we have an inference engine is to say: Whenever a port has a type, transform it to port is-of type!
     swgraph.subrelationOf(portHasUniqueTypeId, Hyperedges{CommonConceptGraph::HasAId});
-    swgraph.subrelationOf(taskInstanceOfTemplateId, Hyperedges{CommonConceptGraph::InstanceOfId});
     swgraph.subrelationOf(transportConnectsPortId, Hyperedges{CommonConceptGraph::ConnectsId});
+    // Special case: instanceOf in system_modelling is a mix of both, CommonConceptGraph::InstanceOf and CommonConceptGraph::IsA
+    swgraph.subrelationOf(instanceOfTemplateId, Hyperedges{CommonConceptGraph::InstanceOfId});
+    swgraph.subrelationOf(instanceOfTemplateId, Hyperedges{CommonConceptGraph::IsAId});
     swgraph.subrelationOf(taskIsPartOfId, Hyperedges{CommonConceptGraph::PartOfId});
     // TODO: What do we do about Contains?
 
