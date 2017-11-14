@@ -79,7 +79,10 @@ int main (int argc, char **argv)
             // First: Find the superclass
             Hyperedges super = swgraph.find(type);
             if (!super.size())
+            {
+                std::cout << "Missing super class " << type << " for concept " << label << "\n";
                 continue;
+            }
             // Second:
             // system_modelling only knows instances but no subclasses
             // Unfortunately, we now have to fix here some inconsistencies:
@@ -106,11 +109,17 @@ int main (int argc, char **argv)
             // First: Find the superclass
             Hyperedges super = swgraph.relations(type);
             if (!super.size())
+            {
+                std::cout << "Missing super class " << type << " for relation " << label << "\n";
                 continue;
+            }
             // Second: Instantiate from that superclass
             Hyperedges sub = swgraph.relateFrom(old2new[fromId], old2new[toId], super);
             if (!sub.size())
+            {
+                std::cout << "Could not relate " << old2new[fromId] << " to " << old2new[toId] << "\n";
                 continue;
+            }
             Hyperedges edgeId = subtract(subtract(sub, old2new[fromId]), old2new[toId]);
             swgraph.get(*edgeId.begin())->updateLabel(label);
         }
