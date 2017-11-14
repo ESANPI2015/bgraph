@@ -180,7 +180,7 @@ int main (int argc, char **argv)
             // FOR ATOMIC & OTHER NODES:
             // For pure bg nodes, the things will be instances!
             std::cout << "Instantiating " << label << " of type " << super << "\n";
-            sub = swgraph.instantiateSuperDeepFrom(super, label);
+            sub = swgraph.instantiateDeepFrom(super, label);
             old2new[id] = sub;
             // Third: For all inputs, we have to create the "correct" merge nodes and connect them
             if (inputs.IsDefined())
@@ -208,7 +208,7 @@ int main (int argc, char **argv)
                         continue;
                     }
                     std::cout << "Instantiating merge " << mergeSuper << " for input " << inputIdx << "\n";
-                    Hyperedges mergeInst = swgraph.instantiateSuperDeepFrom(mergeSuper);
+                    Hyperedges mergeInst = swgraph.instantiateDeepFrom(mergeSuper);
                     Hyperedges outputsOfMerge = getOutputsOf(swgraph, mergeInst, "merged");
                     swgraph.depends(inputsOfSub, outputsOfMerge);
                     // TODO: For later use we could remember the input merge instances per input
@@ -238,7 +238,7 @@ int main (int argc, char **argv)
                 continue;
             }
             // Second: Instantiate from that superclass
-            Hyperedges edgeInstance = swgraph.instantiateSuperDeepFrom(super, label);
+            Hyperedges edgeInstance = swgraph.instantiateDeepFrom(super, label);
             if (!edgeInstance.size())
             {
                 std::cout << "Warning: Could not instantiate edge with weight " << label << "\n";

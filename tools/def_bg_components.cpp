@@ -44,6 +44,7 @@ int main(void)
 
     // The NODE class
     auto nodeClassId = swgraph.createAlgorithm("NODE");
+    // TODO: We could subclass NODE into three classes depending on arity of the algorithms!
     // Build up the behavior graph components aka Nodes
     // 1-to-1
     Hyperedges id1, id2;
@@ -193,86 +194,39 @@ int main(void)
     swgraph.provides(equalId, id4);
 
     // The MERGE class
-    auto mergeClassId = swgraph.createAlgorithm("MERGE");
+    // NOTE: Because we rely on inheritance, we define the interfaces only once for all merges!!!
     // (UP-TO-N)-to-1 aka Merges
     // they also have "bias" and "defaultValue"
     Hyperedges inputIds;
+    auto mergeClassId = swgraph.createAlgorithm("MERGE");
+    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
+    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
+    for (unsigned i = 0; i < maxMergeInputs; ++i)
+    {
+        inputIds=unite(inputIds, swgraph.instantiateInput(inputClassId, std::to_string(i)));
+    }
+    id1 = swgraph.instantiateOutput(outputClassId, "merged");
+    swgraph.needs(mergeClassId, inputIds);
+    swgraph.provides(mergeClassId, id1);
+
+    // The different merges
     auto sumId = swgraph.createAlgorithm("SUM");
     swgraph.isA(sumId, mergeClassId);
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned i = 0; i < maxMergeInputs; ++i)
-    {
-        inputIds=unite(inputIds, swgraph.instantiateInput(inputClassId, std::to_string(i)));
-    }
-    id1 = swgraph.instantiateOutput(outputClassId, "merged");
-    swgraph.needs(sumId, inputIds);
-    swgraph.provides(sumId, id1);
 
-    inputIds.clear();
     auto prodId = swgraph.createAlgorithm("PRODUCT");
     swgraph.isA(prodId, mergeClassId);
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned i = 0; i < maxMergeInputs; ++i)
-    {
-        inputIds=unite(inputIds, swgraph.instantiateInput(inputClassId, std::to_string(i)));
-    }
-    id1 = swgraph.instantiateOutput(outputClassId, "merged");
-    swgraph.needs(prodId, inputIds);
-    swgraph.provides(prodId, id1);
 
-    inputIds.clear();
     auto minId = swgraph.createAlgorithm("MIN");
     swgraph.isA(minId, mergeClassId);
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned i = 0; i < maxMergeInputs; ++i)
-    {
-        inputIds=unite(inputIds, swgraph.instantiateInput(inputClassId, std::to_string(i)));
-    }
-    id1 = swgraph.instantiateOutput(outputClassId, "merged");
-    swgraph.needs(minId, inputIds);
-    swgraph.provides(minId, id1);
 
-    inputIds.clear();
     auto maxId = swgraph.createAlgorithm("MAX");
     swgraph.isA(maxId, mergeClassId);
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned i = 0; i < maxMergeInputs; ++i)
-    {
-        inputIds=unite(inputIds, swgraph.instantiateInput(inputClassId, std::to_string(i)));
-    }
-    id1 = swgraph.instantiateOutput(outputClassId, "merged");
-    swgraph.needs(maxId, inputIds);
-    swgraph.provides(maxId, id1);
 
-    inputIds.clear();
     auto meanId = swgraph.createAlgorithm("MEAN");
     swgraph.isA(meanId, mergeClassId);
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned i = 0; i < maxMergeInputs; ++i)
-    {
-        inputIds=unite(inputIds, swgraph.instantiateInput(inputClassId, std::to_string(i)));
-    }
-    id1 = swgraph.instantiateOutput(outputClassId, "merged");
-    swgraph.needs(meanId, inputIds);
-    swgraph.provides(meanId, id1);
 
-    inputIds.clear();
     auto normId = swgraph.createAlgorithm("NORM");
     swgraph.isA(normId, mergeClassId);
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "defaultValue"));
-    inputIds=unite(inputIds,swgraph.instantiateInput(inputClassId, "bias"));
-    for (unsigned i = 0; i < maxMergeInputs; ++i)
-    {
-        inputIds=unite(inputIds, swgraph.instantiateInput(inputClassId, std::to_string(i)));
-    }
-    id1 = swgraph.instantiateOutput(outputClassId, "merged");
-    swgraph.needs(normId, inputIds);
-    swgraph.provides(normId, id1);
 
     // The EDGE class
     inputIds.clear();
