@@ -9,6 +9,10 @@ int main(void)
     // NOTE: Everything in here could be a constructor of a derived class!
     Software::Graph swgraph;
 
+    // TODO: This has to be in an upper class
+    // Define the domain to be modelled
+    auto domainId = swgraph.create("system_modelling::task_graph", "DROCK");
+
     // Some constants
     // Supported Languages
     auto cId = swgraph.createLanguage("C");
@@ -37,12 +41,12 @@ int main(void)
     // Upper relations
     // PortConnection -- ConnectsTo --> OutputPort  =   PortConnection.InputPort <-- dependsOn --> OutputPort
     // PortConnection -- ConnectsTo --> InputPort   =   InputPort <-- dependsOn --> PortConnection.OutputPort
-    auto taskHasPortId = swgraph.relate(taskClassId, portClassId, "system_modelling::graph_basics::Has");
-    auto transportConnectsPortId = swgraph.relate(transportClassId, portClassId, "system_modelling::graph_basics::ConnectsTo");
-    auto taskIsPartOfId = swgraph.relate(taskClassId, networkClassId, "system_modelling::graph_basics::PartOf");
-    auto taskContainsId = swgraph.relate(networkClassId, taskClassId, "system_modelling::graph_basics::Contains");
-    auto portHasUniqueTypeId = swgraph.relate(portClassId, dataTypeId, "system_modelling::graph_basics::HasUnique");
-    auto instanceOfTemplateId = swgraph.relate(Hyperedges{Conceptgraph::IsConceptId}, Hyperedges{Conceptgraph::IsConceptId}, "system_modelling::graph_basics::InstanceOf");
+    auto taskHasPortId           = subtract(swgraph.relate(taskClassId, portClassId, "system_modelling::graph_basics::Has"), unite(taskClassId, portClassId));
+    auto transportConnectsPortId = subtract(swgraph.relate(transportClassId, portClassId, "system_modelling::graph_basics::ConnectsTo"), unite(transportClassId, portClassId));
+    auto taskIsPartOfId          = subtract(swgraph.relate(taskClassId, networkClassId, "system_modelling::graph_basics::PartOf"), unite(taskClassId, networkClassId));
+    auto taskContainsId          = subtract(swgraph.relate(networkClassId, taskClassId, "system_modelling::graph_basics::Contains"), unite(networkClassId, taskClassId));
+    auto portHasUniqueTypeId     = subtract(swgraph.relate(portClassId, dataTypeId, "system_modelling::graph_basics::HasUnique"), unite(portClassId, dataTypeId));
+    auto instanceOfTemplateId    = subtract(swgraph.relate(Hyperedges{Conceptgraph::IsConceptId}, Hyperedges{Conceptgraph::IsConceptId}, "system_modelling::graph_basics::InstanceOf"), Hyperedges{Conceptgraph::IsConceptId});
 
     // Refer new relations to our common and/or special relations!
     swgraph.subrelationOf(taskHasPortId, Hyperedges{Software::Graph::HasAId});
@@ -55,6 +59,24 @@ int main(void)
     swgraph.subrelationOf(instanceOfTemplateId, Hyperedges{CommonConceptGraph::IsAId});
     swgraph.subrelationOf(taskIsPartOfId, Hyperedges{CommonConceptGraph::PartOfId});
     // TODO: What do we do about Contains?
+
+
+    // Make the relevant concepts part of the domain
+    Hyperedges all;
+    all = unite(all, taskClassId);
+    all = unite(all, networkClassId);
+    all = unite(all, transportClassId);
+    all = unite(all, portClassId);
+    all = unite(all, inputClassId);
+    all = unite(all, outputClassId);
+    all = unite(all, dataTypeId);
+    all = unite(all, taskHasPortId);
+    all = unite(all, transportConnectsPortId);
+    all = unite(all, taskIsPartOfId);
+    all = unite(all, taskContainsId);
+    all = unite(all, portHasUniqueTypeId);
+    all = unite(all, instanceOfTemplateId);
+    swgraph.partOf(all, Hyperedges{domainId});
 
     // Is that all?
     // Now we can load stuff, right?
