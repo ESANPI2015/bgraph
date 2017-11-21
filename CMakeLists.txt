@@ -90,6 +90,11 @@ target_link_libraries(import_task_graph swgraph)
 install(TARGETS import_task_graph
 RUNTIME DESTINATION bin)
 
+add_executable(export_task_graph tools/export_task_graph.cpp)
+target_link_libraries(export_task_graph swgraph)
+install(TARGETS export_task_graph
+RUNTIME DESTINATION bin)
+
 # pkg-config, to be installed:
 configure_file(${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION lib/pkgconfig)
