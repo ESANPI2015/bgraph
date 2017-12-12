@@ -1,19 +1,11 @@
-# Software Component & Networks based on Hypergraphs
+# Domain Specific Component Network: Behavior Graph
 
-Library based on hypergraphs to represent and handle software component &amp; network models
-The main superclasses are
+This library serves as an interface to the behavior graph domain.
+In this domain, the algorithms & implementations mostly are pure functional.
+The model knows 3 entites:
+* Computation functions
+* Merge functions
+* Edge functions
 
-* Algorithm
-* Interface
-    - Input
-    - Output
-
-## State
-
-* Similar to the hwgraph library
-
-## ToDo
-
-* Extend the tests
-* Add another domain to encode finite state machines ... with them it is possible to express algorithm internal behavior
-* Add another domain to encode the implementations of an algorithm. This is needed for e.g. different programming languages/target architectures.
+Merge functions are of variing arity and serve as gates to the inputs of the computation functions.
+The edge functions connect the outputs of computation functions with the inputs of merge functions (and therefore inputs of other computation functions).
