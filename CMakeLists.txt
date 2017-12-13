@@ -46,6 +46,11 @@ target_link_libraries(bg-import-model swgraph)
 install(TARGETS bg-import-model
 RUNTIME DESTINATION bin)
 
+add_executable(bg-export-model src/export_behavior_graph.cpp)
+target_link_libraries(bg-export-model swgraph)
+install(TARGETS bg-export-model
+RUNTIME DESTINATION bin)
+
 #add_executable(gen_cpp_class src/gen_cpp_class.cpp)
 #target_link_libraries(gen_cpp_class swgraph)
 #install(TARGETS gen_cpp_class
