@@ -21,10 +21,12 @@ pkg_check_modules(swgraph_PKGCONFIG REQUIRED
     hypergraph domaingraph yaml-cpp
     )
 
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+set(CMAKE_CXX_STANDARD 11)
 include_directories(${swgraph_PKGCONFIG_INCLUDE_DIRS})
 #message(${swgraph_PKGCONFIG_INCLUDE_DIRS})
 link_directories(${swgraph_PKGCONFIG_LIBRARY_DIRS})
-add_definitions(${swgraph_PKGCONFIG_CFLAGS_OTHER} -ggdb --pedantic -Wall -std=c++11)
+add_definitions(${swgraph_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
 
 set(SOURCES
     src/BehaviorGraph.cpp
