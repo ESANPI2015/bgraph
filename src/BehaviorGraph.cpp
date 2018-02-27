@@ -72,7 +72,8 @@ void Graph::setupMetaModel()
 
     // Subclassing by arity makes sense
     uid = createAlgorithm("Behavior::Graph::Node::1-1", "arity1", Hyperedges{"Behavior::Graph::Node"});
-    // TODO: Think about INPUT and OUTPUT nodes ... can we make them interfaces as well?
+    // TODO: Make input of INPUT the input of a toplvl node
+    // TODO: Make output of OUTPUT the output of a toplvl node
     createAlgorithm("Behavior::Graph::Node::Pipe", "PIPE", uid);
     createAlgorithm("Behavior::Graph::Node::Input", "INPUT", uid);
     createAlgorithm("Behavior::Graph::Node::Output", "OUTPUT", uid);
@@ -106,16 +107,16 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
     YAML::Node spec;
 
     // Store toplvl model name
-    //spec["model"] = get(uid)->label();
-
+    spec["model"] = get(uid)->label();
     // Handle nodes
     YAML::Node nodesYAML(spec["nodes"]);
     // Important queries
+    Hyperedges allParts(componentsOf(Hyperedges{uid}));
     Hyperedges allInputs(inputs());
     Hyperedges allOutputs(outputs());
-    // FIXME: Once we have a proper model node, use componentsOf instead
     Hyperedges superClassesOfAllNodes(algorithmClasses("",Hyperedges{"Behavior::Graph::Node"}));
-    Hyperedges nodes(instancesOf(superClassesOfAllNodes));
+    Hyperedges nodes(intersect(instancesOf(superClassesOfAllNodes), allParts));
+    // TODO: Shall we preserve ids? As we did in hwgraph lib?
     unsigned nodeId = 1;
     for (const UniqueId& nodeUid : nodes)
     {
@@ -168,7 +169,7 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
 
     // Handle edges
     YAML::Node edgesYAML(spec["edges"]);
-    Hyperedges edges(instancesOf(algorithmClasses("",Hyperedges{"Behavior::Graph::Edge"})));
+    Hyperedges edges(intersect(instancesOf(algorithmClasses("",Hyperedges{"Behavior::Graph::Edge"})), allParts));
     for (const UniqueId& edgeUid : edges)
     {
         YAML::Node edgeYAML;
@@ -205,16 +206,18 @@ Hyperedges Graph::getMergesOfInput(const Hyperedges& inputs, const std::string& 
 
 bool Graph::domainSpecificImport(const std::string& serialized)
 {
-    YAML::Node spec = YAML::Load(serialized);
-    // TODO: Check if behavior graphs allow toplvl graph names
-    // It turns out that they do!!!
-    // FIXME: Then make a new NETWORK class (SUBGRAPH) node for this 
-    // FIXME: For every INPUT or OUTPUT node create||assign the corresponding interface to the toplvl model
-    const YAML::Node& nodesYAML(spec["nodes"]);
-    const YAML::Node& edgesYAML(spec["edges"]);
-
     // Map from old ids (in file) to new ids
     std::map<UniqueId, Hyperedges> old2new;
+    YAML::Node spec = YAML::Load(serialized);
+    // Create a network class
+    std::string name("NONAME");
+    if (spec["model"].IsDefined())
+        name = spec["model"].as<std::string>();
+    Hyperedges partsOfNet;
+    Hyperedges networkUid(createNetwork("Behavior::Graph::Node::Subgraph::"+name, name, Hyperedges{"Behavior::Graph::Node::Subgraph"}));
+    if (!spec["nodes"].IsDefined())
+        return false;
+    const YAML::Node& nodesYAML(spec["nodes"]);
     if (nodesYAML.IsDefined())
     {
         for (YAML::Node::const_iterator nit = nodesYAML.begin(); nit != nodesYAML.end(); ++nit)
@@ -260,11 +263,12 @@ bool Graph::domainSpecificImport(const std::string& serialized)
             std::cout << "Instantiating " << label << " of type " << super << "\n";
             Hyperedges uid(instantiateComponent(super, label));
             old2new[id] = uid;
+            partsOfNet = unite(partsOfNet, uid);
 
             // For every input, create and connect the correct MERGE algorithm
+            Hyperedges inputIds;
             if (inputsYAML.IsDefined())
             {
-                Hyperedges inputIds;
                 for (YAML::Node::const_iterator it = inputsYAML.begin(); it != inputsYAML.end(); it++)
                 {
                     // Create input
@@ -295,6 +299,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     // Instantiate merge
                     std::cout << "Instantiating merge " << mergeType << " for input " << inputLabel << "\n";
                     Hyperedges mergeUid(instantiateComponent(mergeClasses));
+                    partsOfNet = unite(partsOfNet, mergeUid);
                     Hyperedges outputOfMerge(intersect(interfacesOf(mergeUid, "merged"), outputs("merged")));
                     std::cout << dependsOn(inputOfComponent, outputOfMerge) << "\n";
                 }
@@ -302,9 +307,9 @@ bool Graph::domainSpecificImport(const std::string& serialized)
             }
 
             // Create specified outputs
+            Hyperedges outputIds;
             if (outputsYAML.IsDefined())
             {
-                Hyperedges outputIds;
                 for (YAML::Node::const_iterator it = outputsYAML.begin(); it != outputsYAML.end(); it++)
                 {
                     const YAML::Node& outputYAML(*it);
@@ -320,6 +325,20 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                 }
                 providesInterface(uid, outputIds);
             }
+
+            // TODO: Is it that simple?
+            // For INPUT nodes: Make their input(s) the input(s) of the toplvl node
+            if (type == "INPUT")
+            {
+                std::cout << "Export inputs " << inputIds << std::endl;
+                needsInterface(networkUid, inputIds);
+            }
+            // For OUTPUT nodes: Make their output(s) the output(s) of the toplvl node
+            if (type == "OUTPUT")
+            {
+                std::cout << "Export outputs " << outputIds << std::endl;
+                providesInterface(networkUid, outputIds);
+            }
         }
     } else {
         std::cout << "No nodes section\n";
@@ -327,6 +346,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
     }
 
     // Treat edges
+    const YAML::Node& edgesYAML(spec["edges"]);
     if (edgesYAML.IsDefined())
     {
         for (YAML::Node::const_iterator eit = edgesYAML.begin(); eit != edgesYAML.end(); ++eit)
@@ -409,10 +429,13 @@ bool Graph::domainSpecificImport(const std::string& serialized)
             // Now we can instantiate and connect
             std::cout << "Connecting " << fromLabel << "," << fromOutputLabel << " to " << toLabel << "," << toInputLabel << "\n";
             Hyperedges uid(instantiateComponent(Hyperedges{"Behavior::Graph::Edge"}, label));
+            partsOfNet = unite(partsOfNet, uid);
             std::cout << dependsOn(interfacesOf(uid,"in"), fromNodeOutputIds) << " ";
             std::cout << dependsOn(unconnectedInputs, interfacesOf(uid,"out")) << "\n";
         }
     }
+    // Make all stuff part of the network
+    partOfNetwork(partsOfNet, networkUid);
     return true;
 }
 
