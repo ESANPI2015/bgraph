@@ -1,5 +1,5 @@
 #include "BehaviorGraph.hpp"
-#include "HyperedgeYAML.hpp"
+#include "HypergraphYAML.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -60,6 +60,7 @@ int main (int argc, char **argv)
     fin.open(fileNameIn);
     if(!fin.good()) {
         std::cout << "READ FAILED\n";
+        return 2;
     }
     std::stringstream ss;
     ss << fin.rdbuf();
@@ -73,10 +74,9 @@ int main (int argc, char **argv)
     fout.open(fileNameOut);
     if(!fout.good()) {
         std::cout << "FAILED\n";
+        return 3;
     }
-    YAML::Node test;
-    test = static_cast<Hypergraph*>(&bg);
-    fout << test;
+    fout << YAML::StringFrom(bg) << std::endl;
     fout.close();
     fin.close();
 
