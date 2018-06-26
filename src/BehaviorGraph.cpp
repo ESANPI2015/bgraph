@@ -121,8 +121,8 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
     for (const UniqueId& nodeUid : nodes)
     {
         YAML::Node nodeYAML;
-        Hyperedges superClasses(instancesOf(Hyperedges{nodeUid}, "", TraversalDirection::DOWN));
-        Hyperedges superSuperClasses(subclassesOf(superClasses,"", TraversalDirection::DOWN));
+        Hyperedges superClasses(instancesOf(Hyperedges{nodeUid}, "", TraversalDirection::FORWARD));
+        Hyperedges superSuperClasses(subclassesOf(superClasses,"", TraversalDirection::FORWARD));
         if (superClasses.empty())
         {
             std::cout << "No superclass for " << nodeUid << "\n";
@@ -135,7 +135,7 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         {
             YAML::Node inputYAML;
             inputYAML["name"] = get(inputUid)->label();
-            Hyperedges mergeUid(childrenOf(endpointsOf(Hyperedges{inputUid}),"",TraversalDirection::UP));
+            Hyperedges mergeUid(childrenOf(endpointsOf(Hyperedges{inputUid}),"",TraversalDirection::INVERSE));
             inputYAML["type"] = get(*mergeUid.begin())->label();
             //inputYAML["bias"] = get(*superClasses2.begin())->label();
             //inputYAML["default"] = get(*superClasses2.begin())->label();
@@ -178,15 +178,15 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         Hyperedges fromOutputUid(endpointsOf(interfacesOf(Hyperedges{edgeUid},"in")));
         // TODO: If label can be converted to a unsigned int ... use fromNodeOutputIdx
         edgeYAML["fromNodeOutput"] = get(*fromOutputUid.begin())->label();
-        Hyperedges fromNodeUid(childrenOf(fromOutputUid,"",TraversalDirection::UP));
+        Hyperedges fromNodeUid(childrenOf(fromOutputUid,"",TraversalDirection::INVERSE));
         edgeYAML["fromNode"] = get(*fromNodeUid.begin())->label();
         // Get edge output and follow chain
         // Here we will get to a merge in between!!!
-        Hyperedges toMergeInputUid(endpointsOf(interfacesOf(Hyperedges{edgeUid},"out"),"",TraversalDirection::UP));
-        Hyperedges toMergeNodeUid(childrenOf(toMergeInputUid,"",TraversalDirection::UP));
+        Hyperedges toMergeInputUid(endpointsOf(interfacesOf(Hyperedges{edgeUid},"out"),"",TraversalDirection::INVERSE));
+        Hyperedges toMergeNodeUid(childrenOf(toMergeInputUid,"",TraversalDirection::INVERSE));
         Hyperedges toMergeOutputUid(interfacesOf(toMergeNodeUid, "merged"));
-        Hyperedges toInputUid(endpointsOf(toMergeOutputUid,"",TraversalDirection::UP));
-        Hyperedges toNodeUid(childrenOf(toInputUid,"",TraversalDirection::UP));
+        Hyperedges toInputUid(endpointsOf(toMergeOutputUid,"",TraversalDirection::INVERSE));
+        Hyperedges toNodeUid(childrenOf(toInputUid,"",TraversalDirection::INVERSE));
         edgeYAML["toNodeInput"] = get(*toInputUid.begin())->label();
         edgeYAML["toNode"] = get(*toNodeUid.begin())->label();
         edgesYAML.push_back(edgeYAML);
@@ -200,7 +200,7 @@ Hyperedges Graph::getMergesOfInput(const Hyperedges& inputs, const std::string& 
 {
     Hyperedges allMerges = instancesOf(algorithmClasses("", Hyperedges{"Behavior::Graph::Merge"}), label);
     Hyperedges allEndpoints = endpointsOf(inputs, "merged"); // all outputs of some merges?
-    Hyperedges allParentsOfEndpoints = childrenOf(allEndpoints, label, Software::Graph::TraversalDirection::UP);
+    Hyperedges allParentsOfEndpoints = childrenOf(allEndpoints, label, Software::Graph::TraversalDirection::INVERSE);
     return intersect(allMerges, allParentsOfEndpoints);
 }
 
