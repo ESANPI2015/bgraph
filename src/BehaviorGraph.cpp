@@ -40,7 +40,7 @@ void Graph::setupMetaModel()
     // In VHDL: 32 Bit std_logic_vector
     uid = createDatatype("Behavior::Graph::Interface::C", "float");
     uid = unite(uid, createDatatype("Behavior::Graph::Interface::VHDL", "std_logic_vector(31 downto 0)"));
-    isA(uid, Hyperedges{"Behavior::Graph::Interface"});
+    isA(uid, Hyperedges{"Behavior::Graph::Interface", "Behavior::Graph::Input", "Behavior::Graph::Output"});
 
     // The EDGE algorithm has
     // two inputs: in, weight
@@ -336,6 +336,12 @@ bool Graph::domainSpecificImport(const std::string& serialized)
             // For OUTPUT nodes: Make their output(s) the output(s) of the toplvl node
             if (type == "OUTPUT")
             {
+                // Create output if non-existing
+                if (!outputIds.size())
+                {
+                    outputIds = instantiateFrom(Hyperedges{"Behavior::Graph::Output"});
+                    providesInterface(uid, outputIds);
+                }
                 std::cout << "Export outputs " << outputIds << std::endl;
                 providesInterface(networkUid, outputIds);
             }
