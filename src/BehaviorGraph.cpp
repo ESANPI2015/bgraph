@@ -199,13 +199,15 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
 Hyperedges Graph::getMergesOfInput(const Hyperedges& inputs, const std::string& label)
 {
     Hyperedges allMerges = instancesOf(algorithmClasses("", Hyperedges{"Behavior::Graph::Merge"}), label);
-    Hyperedges allEndpoints = endpointsOf(inputs, "merged"); // all outputs of some merges?
+    Hyperedges allEndpoints = endpointsOf(inputs, "merged", Software::Graph::TraversalDirection::INVERSE); // all outputs of some merges?
     Hyperedges allParentsOfEndpoints = childrenOf(allEndpoints, label, Software::Graph::TraversalDirection::INVERSE);
     return intersect(allMerges, allParentsOfEndpoints);
 }
 
 bool Graph::domainSpecificImport(const std::string& serialized)
 {
+    // Map mergeUid to index
+    std::map<UniqueId, unsigned> mergeIndex;
     // Map from old ids (in file) to new ids
     std::map<UniqueId, Hyperedges> old2new;
     YAML::Node spec = YAML::Load(serialized);
@@ -284,6 +286,13 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     Hyperedges inputOfComponent(instantiateFrom(Hyperedges{"Behavior::Graph::Input"},inputLabel));
                     inputIds = unite(inputIds, inputOfComponent);
                     std::cout << "Create input " << inputLabel << " for " << label << "\n";
+
+                    // Suppress merge creation for INPUT nodes
+                    if (type == "INPUT")
+                    {
+                        std::cout << "Skipping merge creation for " << label << " node\n";
+                        continue;
+                    }
 
                     // Create merge
                     const std::string& mergeType(inputYAML["type"].as<std::string>());
@@ -423,13 +432,17 @@ bool Graph::domainSpecificImport(const std::string& serialized)
             }
 
             //  OPTIMIZATION: Create a new input to the merge function on demand
+            //  However, we have to create indices. Otherwise we could not identify them properly
+            //  That means, that we have to keep track on the current index per mergeId
             Hyperedges mergeIds(getMergesOfInput(toNodeInputIds));
             Hyperedges unconnectedInputs;
             for (const UniqueId& mergeId : mergeIds)
             {
-                Hyperedges newInputOfMerge(instantiateFrom(Hyperedges{"Behavior::Graph::Input"}));
+                unsigned index = mergeIndex[mergeId];
+                Hyperedges newInputOfMerge(instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, std::to_string(index)));
                 needsInterface(Hyperedges{mergeId}, newInputOfMerge);
                 unconnectedInputs = unite(unconnectedInputs, newInputOfMerge);
+                mergeIndex[mergeId] = ++index;
             }
 
             // Now we can instantiate and connect
