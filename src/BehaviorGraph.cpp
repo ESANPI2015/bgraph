@@ -350,8 +350,11 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     // Also, suppress merge creation
                     if (type == "INPUT")
                     {
-                        std::cout << "Export inputs " << inputOfComponent << std::endl;
-                        // TODO: Relabel input to match the label of the INPUT node!
+                        for (const UniqueId& inputUid : inputOfComponent)
+                        {
+                            std::cout << "Export inputs " << inputUid << " and rename it to " << label << std::endl;
+                            get(inputUid)->updateLabel(label);
+                        }
                         needsInterface(networkUid, inputOfComponent);
                         std::cout << "Skipping merge creation for " << label << " node\n";
                         continue;
@@ -401,8 +404,11 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     // For OUTPUT nodes: Make their output(s) the output(s) of the toplvl node
                     if (type == "OUTPUT")
                     {
-                        std::cout << "Export outputs " << outputOfComponent << std::endl;
-                        // TODO: Relabel output to match the label of the OUTPUT node!
+                        for (const UniqueId& outputUid : outputOfComponent)
+                        {
+                            std::cout << "Export outputs " << outputUid << " and rename it to " << label << std::endl;
+                            get(outputUid)->updateLabel(label);
+                        }
                         providesInterface(networkUid, outputOfComponent);
                     }
                 }
@@ -494,6 +500,11 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                 Hyperedges inputsOfMerge(intersect(inputs(), interfacesOf(Hyperedges{mergeId})));
                 for (const UniqueId& mergeInput : inputsOfMerge)
                 {
+                    // Do not connect defaultValue or bias
+                    if (get(mergeInput)->label() == "defaultValue")
+                        continue;
+                    if (get(mergeInput)->label() == "bias")
+                        continue;
                     Hyperedges others(endpointsOf(Hyperedges{mergeInput},"",Hypergraph::TraversalDirection::INVERSE));
                     if (!others.size())
                     {
