@@ -66,6 +66,8 @@ nodes:
   name: audio_out
   inputs:
   - {idx: 0, bias: 0, default: 0.0, type: 'SUM'}
+  outputs:
+  - {idx: 0}
   type: OUTPUT
 edges:
 - {fromNodeId: 1, fromNodeOutputIdx: 0, toNodeId: 2, toNodeInputIdx: 0, weight: 1.0}
