@@ -167,12 +167,12 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         nodeYAML["id"] = nodeId;
         nodeYAML["name"] = get(nodeUid)->label();
         // Special cases for SUBGRAPH && EXTERN
-        if (superSuperClasses.count("Behavior::Graph::Node::Subgraph"))
+        if (std::find(superSuperClasses.begin(), superSuperClasses.end(), "Behavior::Graph::Node::Subgraph") != superSuperClasses.end())
         {
             nodeYAML["type"] = get("Behavior::Graph::Node::Subgraph")->label();
             nodeYAML["subgraph_name"] = get(*superClasses.begin())->label();
         }
-        else if (superSuperClasses.count("Behavior::Graph::Node::Extern"))
+        else if (std::find(superSuperClasses.begin(), superSuperClasses.end(), "Behavior::Graph::Node::Extern") != superSuperClasses.end())
         {
             nodeYAML["type"] = get("Behavior::Graph::Node::Extern")->label();
             nodeYAML["extern_name"] = get(*superClasses.begin())->label();
@@ -351,6 +351,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     if (type == "INPUT")
                     {
                         std::cout << "Export inputs " << inputOfComponent << std::endl;
+                        // TODO: Relabel input to match the label of the INPUT node!
                         needsInterface(networkUid, inputOfComponent);
                         std::cout << "Skipping merge creation for " << label << " node\n";
                         continue;
@@ -401,6 +402,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     if (type == "OUTPUT")
                     {
                         std::cout << "Export outputs " << outputOfComponent << std::endl;
+                        // TODO: Relabel output to match the label of the OUTPUT node!
                         providesInterface(networkUid, outputOfComponent);
                     }
                 }
@@ -495,7 +497,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     Hyperedges others(endpointsOf(Hyperedges{mergeInput},"",Hypergraph::TraversalDirection::INVERSE));
                     if (!others.size())
                     {
-                        unconnectedInputs.insert(mergeInput);
+                        unconnectedInputs = unite(unconnectedInputs, Hyperedges{mergeInput});
                         break;
                     }
                 }
