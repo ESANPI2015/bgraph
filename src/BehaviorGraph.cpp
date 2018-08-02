@@ -24,7 +24,6 @@ void Graph::setupMetaModel()
 {
     Hyperedges uid, inputIds;
     const unsigned maxMergeInputs = 10;
-    // TODO: Create a FOURTH class with one output named CONSTANT. This is used for assigning constant values to ports
     // Three main superclasses of the behavior graph domain:
     // NODE -- EDGE -- MERGE -- NODE ... pattern
     createAlgorithm("Behavior::Graph::Node", "NODE");
@@ -125,6 +124,8 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
     YAML::Node nodesYAML(spec["nodes"]);
     // Important queries
     Hyperedges allParts(componentsOf(Hyperedges{uid}));
+    Hyperedges allDefaultValues(inputs("defaultValue"));
+    Hyperedges allBiasValues(inputs("bias"));
     Hyperedges allInputs(inputs());
     Hyperedges allOutputs(outputs());
     Hyperedges superClassesOfAllNodes(algorithmClasses("",Hyperedges{"Behavior::Graph::Node"}));
@@ -148,11 +149,26 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         {
             YAML::Node inputYAML;
             inputYAML["name"] = get(inputUid)->label();
-            Hyperedges mergeUid(childrenOf(endpointsOf(Hyperedges{inputUid}),"",TraversalDirection::INVERSE));
-            inputYAML["type"] = get(*mergeUid.begin())->label();
-            //inputYAML["bias"] = get(*superClasses2.begin())->label();
-            //inputYAML["default"] = get(*superClasses2.begin())->label();
-            inputsYAML.push_back(inputYAML);
+            Hyperedges mergeUids(getMergesOfInput(Hyperedges{inputUid}));
+            if (!mergeUids.size())
+            {
+                std::cout << "No merge for " << get(inputUid)->label() << std::endl;
+            }
+            for (const UniqueId& mergeUid : mergeUids)
+            {
+                inputYAML["type"] = get(mergeUid)->label();
+                Hyperedges defaultValueUids(valuesOf(intersect(allDefaultValues, interfacesOf(Hyperedges{mergeUid}))));
+                Hyperedges biasValueUids(valuesOf(intersect(allBiasValues, interfacesOf(Hyperedges{mergeUid}))));
+                for (const UniqueId& defUid : defaultValueUids)
+                {
+                    inputYAML["default"] = get(defUid)->label();
+                    for (const UniqueId& biasUid : biasValueUids)
+                    {
+                        inputYAML["bias"] = get(biasUid)->label();
+                        inputsYAML.push_back(inputYAML);
+                    }
+                }
+            }
         }
         YAML::Node outputsYAML(nodeYAML["outputs"]);
         for (const UniqueId& outputUid : intersect(interfaceUids, allOutputs))
@@ -386,7 +402,22 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     Hyperedges mergeUid(instantiateComponent(mergeClasses));
                     partsOfNet = unite(partsOfNet, mergeUid);
                     Hyperedges outputOfMerge(intersect(interfacesOf(mergeUid, "merged"), outputs("merged")));
-                    // TODO: Assign values to defaultValue and bias!
+                    // Assign values to defaultValue and bias!
+                    Hyperedges interfacesOfMerge(interfacesOf(mergeUid));
+                    Hyperedges defaultUids(intersect(interfacesOfMerge, inputs("defaultValue")));
+                    Hyperedges defaultValueUids(instantiateValueFor(defaultUids));
+                    for (const UniqueId& defUid : defaultValueUids)
+                    {
+                        std::cout << "Assinging default value " << mergeDefault << "\n";
+                        get(defUid)->updateLabel(mergeDefault);
+                    }
+                    Hyperedges biasUids(intersect(interfacesOfMerge, inputs("bias")));
+                    Hyperedges biasValueUids(instantiateValueFor(biasUids));
+                    for (const UniqueId& biasUid : biasValueUids)
+                    {
+                        std::cout << "Assinging bias value " << mergeBias << "\n";
+                        get(biasUid)->updateLabel(mergeBias);
+                    }
                     std::cout << dependsOn(inputOfComponent, outputOfMerge) << "\n";
                 }
             }
