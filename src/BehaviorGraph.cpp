@@ -44,11 +44,8 @@ void Graph::setupMetaModel()
     isA(uid, Hyperedges{"Behavior::Graph::Interface", "Behavior::Graph::Input", "Behavior::Graph::Output"});
 
     // The EDGE algorithm has
-    // two inputs: in, weight
-    inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "in"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "weight"));
-    needsInterface(Hyperedges{"Behavior::Graph::Edge"}, inputIds);
+    // one input: in
+    needsInterface(Hyperedges{"Behavior::Graph::Edge"}, instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "in"));
     // one output: out
     providesInterface(Hyperedges{"Behavior::Graph::Edge"}, instantiateFrom(Hyperedges{"Behavior::Graph::Output"}, "out"));
 
@@ -243,7 +240,6 @@ bool Graph::domainSpecificImport(const std::string& serialized)
             const YAML::Node& nodeYAML(*nit);
             const UniqueId& id(nodeYAML["id"].as<UniqueId>());
             const std::string& type(nodeYAML["type"].as<std::string>());
-            // TODO: We could use the domain concept here :)
             Hyperedges super(algorithmClasses(type));
             if (super.empty())
             {
@@ -256,7 +252,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
             const YAML::Node& inputsYAML(nodeYAML["inputs"]);
             const YAML::Node& outputsYAML(nodeYAML["outputs"]);
             const YAML::Node& subgraph_nameYAML(nodeYAML["subgraph_name"]);
-            // TODO: What about extern_name ?
+            const YAML::Node& extern_nameYAML(nodeYAML["extern_name"]);
 
             // For SUBGRAPH and EXTERN nodes we first have to create a subclass & interfaces (if it does not exist yet)
             if ((type == "SUBGRAPH") || (type == "EXTERN"))
@@ -265,6 +261,8 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                 std::string superLabel(label);
                 if (subgraph_nameYAML.IsDefined())
                     superLabel = subgraph_nameYAML.as<std::string>();
+                else if (extern_nameYAML.IsDefined())
+                    superLabel = extern_nameYAML.as<std::string>();
                 // super contains now either SUBGRAPH || EXTERN
                 Hyperedges sub(algorithmClasses(superLabel, super));
                 if (sub.empty())
@@ -352,10 +350,9 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     {
                         for (const UniqueId& inputUid : inputOfComponent)
                         {
-                            std::cout << "Export inputs " << inputUid << " and rename it to " << label << std::endl;
-                            get(inputUid)->updateLabel(label);
+                            std::cout << "Export input " << inputUid << " by creating alias interface named " << label << std::endl;
+                            needsInterface(networkUid, instantiateAliasInterfaceFor(networkUid, Hyperedges{inputUid}, label));
                         }
-                        needsInterface(networkUid, inputOfComponent);
                         std::cout << "Skipping merge creation for " << label << " node\n";
                         continue;
                     }
@@ -406,10 +403,9 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     {
                         for (const UniqueId& outputUid : outputOfComponent)
                         {
-                            std::cout << "Export outputs " << outputUid << " and rename it to " << label << std::endl;
-                            get(outputUid)->updateLabel(label);
+                            std::cout << "Export output " << outputUid << " by creating alias interface named " << label << std::endl;
+                            providesInterface(networkUid, instantiateAliasInterfaceFor(networkUid, Hyperedges{outputUid}, label));
                         }
-                        providesInterface(networkUid, outputOfComponent);
                     }
                 }
             }
