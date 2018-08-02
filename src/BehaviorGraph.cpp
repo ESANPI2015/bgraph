@@ -188,21 +188,33 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         YAML::Node edgeYAML;
         edgeYAML["weight"] = std::stof(get(edgeUid)->label());
         // Get edge input and follow chain
-        Hyperedges fromOutputUid(endpointsOf(interfacesOf(Hyperedges{edgeUid},"in")));
-        // TODO: If label can be converted to a unsigned int ... use fromNodeOutputIdx
-        edgeYAML["fromNodeOutput"] = get(*fromOutputUid.begin())->label();
-        Hyperedges fromNodeUid(childrenOf(fromOutputUid,"",TraversalDirection::INVERSE));
-        edgeYAML["fromNode"] = get(*fromNodeUid.begin())->label();
-        // Get edge output and follow chain
-        // Here we will get to a merge in between!!!
-        Hyperedges toMergeInputUid(endpointsOf(interfacesOf(Hyperedges{edgeUid},"out"),"",TraversalDirection::INVERSE));
-        Hyperedges toMergeNodeUid(childrenOf(toMergeInputUid,"",TraversalDirection::INVERSE));
-        Hyperedges toMergeOutputUid(interfacesOf(toMergeNodeUid, "merged"));
-        Hyperedges toInputUid(endpointsOf(toMergeOutputUid,"",TraversalDirection::INVERSE));
-        Hyperedges toNodeUid(childrenOf(toInputUid,"",TraversalDirection::INVERSE));
-        edgeYAML["toNodeInput"] = get(*toInputUid.begin())->label();
-        edgeYAML["toNode"] = get(*toNodeUid.begin())->label();
-        edgesYAML.push_back(edgeYAML);
+        Hyperedges fromOutputUids(endpointsOf(interfacesOf(Hyperedges{edgeUid},"in"),"",TraversalDirection::INVERSE));
+        Hyperedges toMergeInputUids(endpointsOf(interfacesOf(Hyperedges{edgeUid},"out")));
+        Hyperedges toMergeNodeUids(interfacesOf(toMergeInputUids,"",TraversalDirection::INVERSE));
+        Hyperedges toMergeOutputUids(interfacesOf(toMergeNodeUids, "merged"));
+        Hyperedges toInputUids(endpointsOf(toMergeOutputUids));
+        for (const UniqueId& fromOutputUid : fromOutputUids)
+        {
+            // TODO: If label can be converted to a unsigned int ... use fromNodeOutputIdx
+            edgeYAML["fromNodeOutput"] = get(fromOutputUid)->label();
+            Hyperedges fromNodeUids(interfacesOf(Hyperedges{fromOutputUid},"",TraversalDirection::INVERSE));
+            for (const UniqueId& fromNodeUid : fromNodeUids)
+            {
+                edgeYAML["fromNode"] = get(fromNodeUid)->label();
+                // Get edge output and follow chain
+                // Here we will get to a merge in between!!!
+                for (const UniqueId& toInputUid : toInputUids)
+                {
+                    edgeYAML["toNodeInput"] = get(toInputUid)->label();
+                    Hyperedges toNodeUids(interfacesOf(Hyperedges{toInputUid},"",TraversalDirection::INVERSE));
+                    for (const UniqueId& toNodeUid : toNodeUids)
+                    {
+                        edgeYAML["toNode"] = get(toNodeUid)->label();
+                        edgesYAML.push_back(edgeYAML);
+                    }
+                }
+            }
+        }
     }
 
     ss << spec;
