@@ -38,8 +38,8 @@ void Graph::setupMetaModel()
     // Datatypes:
     // In C: float
     // In VHDL: 32 Bit std_logic_vector
-    uid = createDatatype("Behavior::Graph::Interface::C", "float");
-    uid = unite(uid, createDatatype("Behavior::Graph::Interface::VHDL", "std_logic_vector(31 downto 0)"));
+    uid = createInterface("Behavior::Graph::Interface::C", "float");
+    uid = unite(uid, createInterface("Behavior::Graph::Interface::VHDL", "std_logic_vector(31 downto 0)"));
     isA(uid, Hyperedges{"Behavior::Graph::Interface", "Behavior::Graph::Input", "Behavior::Graph::Output"});
 
     // The EDGE algorithm has
