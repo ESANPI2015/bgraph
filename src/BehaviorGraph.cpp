@@ -5,6 +5,19 @@
 
 namespace Behavior {
 
+const UniqueId Graph::NodeId = "Behavior::Graph::Node";
+const UniqueId Graph::MergeId = "Behavior::Graph::Merge";
+const UniqueId Graph::EdgeId = "Behavior::Graph::Edge";
+const UniqueId Graph::InterfaceId = "Behavior::Graph::Interface";
+const UniqueId Graph::InputId = "Behavior::Graph::Input";
+const UniqueId Graph::OutputId = "Behavior::Graph::Output";
+const UniqueId Graph::CId = "Behavior::Graph::Interface::C";
+const UniqueId Graph::VHDLId = "Behavior::Graph::Interface::VHDL";
+const UniqueId Graph::ExternId = "Behavior::Graph::Node::Extern";
+const UniqueId Graph::SubgraphId = "Behavior::Graph::Node::Subgraph";
+const UniqueId Graph::CValueId = "Behavior::Graph::Interface::Value::C";
+const UniqueId Graph::VHDLValueId = "Behavior::Graph::Interface::Value::VHDL";
+
 Graph::Graph()
 {
     setupMetaModel();
@@ -26,55 +39,56 @@ void Graph::setupMetaModel()
     const unsigned maxMergeInputs = 10;
     // Three main superclasses of the behavior graph domain:
     // NODE -- EDGE -- MERGE -- NODE ... pattern
-    createAlgorithm("Behavior::Graph::Node", "NODE");
-    createAlgorithm("Behavior::Graph::Merge", "MERGE");
-    createAlgorithm("Behavior::Graph::Edge", "EDGE");
+    createAlgorithm(Graph::NodeId, "NODE");
+    createAlgorithm(Graph::MergeId, "MERGE");
+    createAlgorithm(Graph::EdgeId, "EDGE");
     // Main interfaces:
     // One common interface type, two main input/output classes
-    createInterface("Behavior::Graph::Interface", "IEEE754::binary32");
-    uid = createInput("Behavior::Graph::Input", "bg_input_t");
-    uid = unite(uid, createOutput("Behavior::Graph::Output", "bg_output_t"));
-    isA(uid, Hyperedges{"Behavior::Graph::Interface"});
+    createInterface(Graph::InterfaceId, "IEEE754::binary32");
+    uid = createInput(Graph::InputId, "bg_input_t");
+    uid = unite(uid, createOutput(Graph::OutputId, "bg_output_t"));
+    isA(uid, Hyperedges{Graph::InterfaceId});
+
     // Datatypes:
     // In C: float
     // In VHDL: 32 Bit std_logic_vector
-    uid = createInterface("Behavior::Graph::Interface::C", "float");
-    uid = unite(uid, createInterface("Behavior::Graph::Interface::VHDL", "std_logic_vector(31 downto 0)"));
-    isA(uid, Hyperedges{"Behavior::Graph::Interface", "Behavior::Graph::Input", "Behavior::Graph::Output"});
+    uid = createInterface(Graph::CId, "float");
+    uid = unite(uid, createInterface(Graph::VHDLId, "std_logic_vector(31 downto 0)"));
+    isA(uid, Hyperedges{Graph::InterfaceId, Graph::InputId, Graph::OutputId});
 
     // The EDGE algorithm has
     // one input: in
-    needsInterface(Hyperedges{"Behavior::Graph::Edge"}, instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "in"));
+    needsInterface(Hyperedges{Graph::EdgeId}, instantiateFrom(Hyperedges{Graph::InputId}, "in"));
     // one output: out
-    providesInterface(Hyperedges{"Behavior::Graph::Edge"}, instantiateFrom(Hyperedges{"Behavior::Graph::Output"}, "out"));
+    providesInterface(Hyperedges{Graph::EdgeId}, instantiateFrom(Hyperedges{Graph::OutputId}, "out"));
 
     // MERGE class interfaces (the subclasses inherit them)
     inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "defaultValue"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "bias"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "defaultValue"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "bias"));
     for (unsigned index = 0; index < maxMergeInputs; index++)
-        inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, std::to_string(index)));
-    needsInterface(Hyperedges{"Behavior::Graph::Merge"}, inputIds);
-    providesInterface(Hyperedges{"Behavior::Graph::Merge"}, instantiateFrom(Hyperedges{"Behavior::Graph::Output"}, "merged"));
+        inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, std::to_string(index)));
+    needsInterface(Hyperedges{Graph::MergeId}, inputIds);
+    providesInterface(Hyperedges{Graph::MergeId}, instantiateFrom(Hyperedges{Graph::OutputId}, "merged"));
     // The different subclasses of MERGE
-    createAlgorithm("Behavior::Graph::Merge::Sum", "SUM", Hyperedges{"Behavior::Graph::Merge"});
-    createAlgorithm("Behavior::Graph::Merge::Product", "PRODUCT", Hyperedges{"Behavior::Graph::Merge"});
-    createAlgorithm("Behavior::Graph::Merge::Min", "MIN", Hyperedges{"Behavior::Graph::Merge"});
-    createAlgorithm("Behavior::Graph::Merge::Max", "MAX", Hyperedges{"Behavior::Graph::Merge"});
-    createAlgorithm("Behavior::Graph::Merge::Mean", "MEAN", Hyperedges{"Behavior::Graph::Merge"});
-    createAlgorithm("Behavior::Graph::Merge::Norm", "NORM", Hyperedges{"Behavior::Graph::Merge"});
+    createAlgorithm("Behavior::Graph::Merge::Sum", "SUM", Hyperedges{Graph::MergeId});
+    createAlgorithm("Behavior::Graph::Merge::Product", "PRODUCT", Hyperedges{Graph::MergeId});
+    createAlgorithm("Behavior::Graph::Merge::Min", "MIN", Hyperedges{Graph::MergeId});
+    createAlgorithm("Behavior::Graph::Merge::Max", "MAX", Hyperedges{Graph::MergeId});
+    createAlgorithm("Behavior::Graph::Merge::Mean", "MEAN", Hyperedges{Graph::MergeId});
+    createAlgorithm("Behavior::Graph::Merge::Norm", "NORM", Hyperedges{Graph::MergeId});
 
     // The NODE class subalgorithms
-    createAlgorithm("Behavior::Graph::Node::Extern", "EXTERN", Hyperedges{"Behavior::Graph::Node"});
-    createAlgorithm("Behavior::Graph::Node::Subgraph", "SUBGRAPH", Hyperedges{"Behavior::Graph::Node"});
-    isA(Hyperedges{"Behavior::Graph::Node::Subgraph"}, Hyperedges{Component::Network::NetworkId});
+    createAlgorithm(Graph::ExternId, "EXTERN", Hyperedges{Graph::NodeId});
+    createAlgorithm(Graph::SubgraphId, "SUBGRAPH", Hyperedges{Graph::NodeId});
+    isA(Hyperedges{Graph::SubgraphId}, Hyperedges{Component::Network::NetworkId});
 
     // Subclassing by arity makes sense
-    uid = createAlgorithm("Behavior::Graph::Node::1-1", "arity1", Hyperedges{"Behavior::Graph::Node"});
+    uid = createAlgorithm("Behavior::Graph::Node::1-1", "arity1", Hyperedges{Graph::NodeId});
     inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "0"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "0"));
     needsInterface(uid, inputIds);
-    providesInterface(uid, instantiateFrom(Hyperedges{"Behavior::Graph::Output"}, "0"));
+    providesInterface(uid, instantiateFrom(Hyperedges{Graph::OutputId}, "0"));
     createAlgorithm("Behavior::Graph::Node::Pipe", "PIPE", uid);
     createAlgorithm("Behavior::Graph::Node::Input", "INPUT", uid);
     createAlgorithm("Behavior::Graph::Node::Output", "OUTPUT", uid);
@@ -91,23 +105,23 @@ void Graph::setupMetaModel()
     createAlgorithm("Behavior::Graph::Node::Absolute", "ABS", uid);
     createAlgorithm("Behavior::Graph::Node::SquareRoot", "SQRT", uid);
     // 2-to-1
-    uid = createAlgorithm("Behavior::Graph::Node::2-1", "arity2", Hyperedges{"Behavior::Graph::Node"});
+    uid = createAlgorithm("Behavior::Graph::Node::2-1", "arity2", Hyperedges{Graph::NodeId});
     inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "0"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "1"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "0"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "1"));
     needsInterface(uid, inputIds);
-    providesInterface(uid, instantiateFrom(Hyperedges{"Behavior::Graph::Output"}, "0"));
+    providesInterface(uid, instantiateFrom(Hyperedges{Graph::OutputId}, "0"));
     createAlgorithm("Behavior::Graph::Node::ArcusTangens2D", "ATAN2", uid);
     createAlgorithm("Behavior::Graph::Node::Power", "POW", uid);
     createAlgorithm("Behavior::Graph::Node::Modulo", "MOD", uid);
     // 3-to-1
-    uid = createAlgorithm("Behavior::Graph::Node::3-1", "arity3", Hyperedges{"Behavior::Graph::Node"});
+    uid = createAlgorithm("Behavior::Graph::Node::3-1", "arity3", Hyperedges{Graph::NodeId});
     inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "0"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "1"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{"Behavior::Graph::Input"}, "2"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "0"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "1"));
+    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "2"));
     needsInterface(uid, inputIds);
-    providesInterface(uid, instantiateFrom(Hyperedges{"Behavior::Graph::Output"}, "0"));
+    providesInterface(uid, instantiateFrom(Hyperedges{Graph::OutputId}, "0"));
     createAlgorithm("Behavior::Graph::Node::GreaterZero", ">0", uid);
     createAlgorithm("Behavior::Graph::Node::ApproxZero", "==0", uid);
 }
@@ -128,7 +142,7 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
     Hyperedges allBiasValues(inputs("bias"));
     Hyperedges allInputs(inputs());
     Hyperedges allOutputs(outputs());
-    Hyperedges superClassesOfAllNodes(algorithmClasses("",Hyperedges{"Behavior::Graph::Node"}));
+    Hyperedges superClassesOfAllNodes(algorithmClasses("",Hyperedges{Graph::NodeId}));
     Hyperedges nodes(intersect(instancesOf(superClassesOfAllNodes), allParts));
     // TODO: Shall we preserve ids? As we did in hwgraph lib?
     unsigned nodeId = 1;
@@ -180,14 +194,14 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         nodeYAML["id"] = nodeId;
         nodeYAML["name"] = get(nodeUid)->label();
         // Special cases for SUBGRAPH && EXTERN
-        if (std::find(superSuperClasses.begin(), superSuperClasses.end(), "Behavior::Graph::Node::Subgraph") != superSuperClasses.end())
+        if (std::find(superSuperClasses.begin(), superSuperClasses.end(), Graph::SubgraphId) != superSuperClasses.end())
         {
-            nodeYAML["type"] = get("Behavior::Graph::Node::Subgraph")->label();
+            nodeYAML["type"] = get(Graph::SubgraphId)->label();
             nodeYAML["subgraph_name"] = get(*superClasses.begin())->label();
         }
-        else if (std::find(superSuperClasses.begin(), superSuperClasses.end(), "Behavior::Graph::Node::Extern") != superSuperClasses.end())
+        else if (std::find(superSuperClasses.begin(), superSuperClasses.end(), Graph::ExternId) != superSuperClasses.end())
         {
-            nodeYAML["type"] = get("Behavior::Graph::Node::Extern")->label();
+            nodeYAML["type"] = get(Graph::ExternId)->label();
             nodeYAML["extern_name"] = get(*superClasses.begin())->label();
         } else {
             nodeYAML["type"] = get(*superClasses.begin())->label();
@@ -198,7 +212,7 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
 
     // Handle edges
     YAML::Node edgesYAML(spec["edges"]);
-    Hyperedges edges(intersect(instancesOf(algorithmClasses("",Hyperedges{"Behavior::Graph::Edge"})), allParts));
+    Hyperedges edges(intersect(instancesOf(algorithmClasses("",Hyperedges{Graph::EdgeId})), allParts));
     for (const UniqueId& edgeUid : edges)
     {
         YAML::Node edgeYAML;
@@ -239,10 +253,18 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
 
 Hyperedges Graph::getMergesOfInput(const Hyperedges& inputs, const std::string& label)
 {
-    Hyperedges allMerges = instancesOf(algorithmClasses("", Hyperedges{"Behavior::Graph::Merge"}), label);
+    Hyperedges allMerges = instancesOf(algorithmClasses("", Hyperedges{Graph::MergeId}), label);
     Hyperedges allEndpoints = endpointsOf(inputs, "merged", Software::Graph::TraversalDirection::INVERSE); // all outputs of some merges?
     Hyperedges allParentsOfEndpoints = childrenOf(allEndpoints, label, Software::Graph::TraversalDirection::INVERSE);
     return intersect(allMerges, allParentsOfEndpoints);
+}
+
+std::string Graph::floatToStdLogicVector(const float value)
+{
+    char buf[20];
+    unsigned char *ptr = (unsigned char *)&value;
+    std::snprintf(buf, 20, "x\"%.2x%.2x%.2x%.2x\"", ptr[3], ptr[2], ptr[1], ptr[0]);
+    return std::string(buf);
 }
 
 bool Graph::domainSpecificImport(const std::string& serialized)
@@ -257,7 +279,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
     if (spec["model"].IsDefined())
         name = spec["model"].as<std::string>();
     Hyperedges partsOfNet;
-    Hyperedges networkUid(createNetwork("Behavior::Graph::Node::Subgraph::"+name, name, Hyperedges{"Behavior::Graph::Node::Subgraph"}));
+    Hyperedges networkUid(createNetwork(Graph::SubgraphId+"::"+name, name, Hyperedges{Graph::SubgraphId}));
     if (!spec["nodes"].IsDefined())
         return false;
     const YAML::Node& nodesYAML(spec["nodes"]);
@@ -317,7 +339,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                         if (inputOfComponent.size())
                             continue;
                         std::cout << "Create input " << inputLabel << " for " << superLabel << " node\n";
-                        needsInterface(sub, instantiateInterfaceFor(sub, Hyperedges{"Behavior::Graph::Input"}, inputLabel));
+                        needsInterface(sub, instantiateInterfaceFor(sub, Hyperedges{Graph::InputId}, inputLabel));
                     }
                 }
                 if (outputsYAML.IsDefined())
@@ -337,7 +359,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                         if (outputOfComponent.size())
                             continue;
                         std::cout << "Create output " << outputLabel << " for " << superLabel << " node\n";
-                        providesInterface(sub, instantiateInterfaceFor(sub, Hyperedges{"Behavior::Graph::Output"}, outputLabel));
+                        providesInterface(sub, instantiateInterfaceFor(sub, Hyperedges{Graph::OutputId}, outputLabel));
                     }
                 }
                 // The new sub class is the super class of the following code
@@ -390,7 +412,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     const std::string& mergeBias(inputYAML["bias"].as<std::string>());
                     const std::string& mergeDefault(inputYAML["default"].as<std::string>());
                     // Search for merge class
-                    Hyperedges mergeClasses(algorithmClasses(mergeType, Hyperedges{"Behavior::Graph::Merge"}));
+                    Hyperedges mergeClasses(algorithmClasses(mergeType, Hyperedges{Graph::MergeId}));
                     if (!mergeClasses.size())
                     {
                         std::cout << "Warning, could not find merge type " << mergeType << "\n";
@@ -557,7 +579,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
 
             // Now we can instantiate and connect
             std::cout << "Connecting " << fromLabel << "," << fromOutputLabel << " to " << toLabel << "," << toInputLabel << "\n";
-            Hyperedges uid(instantiateComponent(Hyperedges{"Behavior::Graph::Edge"}, label));
+            Hyperedges uid(instantiateComponent(Hyperedges{Graph::EdgeId}, label));
             partsOfNet = unite(partsOfNet, uid);
             std::cout << dependsOn(interfacesOf(uid,"in"), fromNodeOutputIds) << " ";
             std::cout << dependsOn(unconnectedInputs, interfacesOf(uid,"out")) << "\n";
