@@ -32,8 +32,8 @@ void Graph::setupMetaModel()
     // Main interfaces:
     // One common interface type, two main input/output classes
     createInterface("Behavior::Graph::Interface", "IEEE754::binary32");
-    uid = createInput("Behavior::Graph::Input", "INPUT");
-    uid = unite(uid, createOutput("Behavior::Graph::Output", "OUTPUT"));
+    uid = createInput("Behavior::Graph::Input", "bg_input_t");
+    uid = unite(uid, createOutput("Behavior::Graph::Output", "bg_output_t"));
     isA(uid, Hyperedges{"Behavior::Graph::Interface"});
     // Datatypes:
     // In C: float
@@ -405,14 +405,14 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     // Assign values to defaultValue and bias!
                     Hyperedges interfacesOfMerge(interfacesOf(mergeUid));
                     Hyperedges defaultUids(intersect(interfacesOfMerge, inputs("defaultValue")));
-                    Hyperedges defaultValueUids(instantiateValueFor(defaultUids));
+                    Hyperedges defaultValueUids(instantiateValueFor(defaultUids, Hyperedges{Component::Network::ValueId}));
                     for (const UniqueId& defUid : defaultValueUids)
                     {
                         std::cout << "Assinging default value " << mergeDefault << "\n";
                         get(defUid)->updateLabel(mergeDefault);
                     }
                     Hyperedges biasUids(intersect(interfacesOfMerge, inputs("bias")));
-                    Hyperedges biasValueUids(instantiateValueFor(biasUids));
+                    Hyperedges biasValueUids(instantiateValueFor(biasUids, Hyperedges{Component::Network::ValueId}));
                     for (const UniqueId& biasUid : biasValueUids)
                     {
                         std::cout << "Assinging bias value " << mergeBias << "\n";
