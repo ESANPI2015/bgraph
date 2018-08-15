@@ -67,6 +67,9 @@ class Graph : public Software::Graph
         Hyperedges getMergesOfInput(const Hyperedges& inputs, const std::string& label="");
 
         std::string floatToStdLogicVector(const float value);
+        std::string floatToC(const float value);
+
+        Hyperedges createOrFindValueClassesFor(const std::string& value);
 
     protected:
         void setupMetaModel();

@@ -56,6 +56,12 @@ void Graph::setupMetaModel()
     uid = unite(uid, createInterface(Graph::VHDLId, "std_logic_vector(31 downto 0)"));
     isA(uid, Hyperedges{Graph::InterfaceId, Graph::InputId, Graph::OutputId});
 
+    // Values:
+    // One class for C and one for VHDL values
+    // TODO: Do we need a toplvl entity?
+    createValue(Graph::CValueId, "C value");
+    createValue(Graph::VHDLValueId, "VHDL value");
+
     // The EDGE algorithm has
     // one input: in
     needsInterface(Hyperedges{Graph::EdgeId}, instantiateFrom(Hyperedges{Graph::InputId}, "in"));
@@ -267,6 +273,26 @@ std::string Graph::floatToStdLogicVector(const float value)
     return std::string(buf);
 }
 
+std::string Graph::floatToC(const float value)
+{
+    return std::to_string(value)+"f";
+}
+
+Hyperedges Graph::createOrFindValueClassesFor(const std::string& value)
+{
+    Hyperedges vClasses(valueClasses(value));
+    if (!vClasses.size())
+    {
+        std::cout << "Creating abstract value class for " << value << "\n";
+        vClasses = unite(vClasses, createValue(Component::Network::ValueId+"::"+value, value));
+        // * Generate a SPECIFIC value classes for each language (whereas the C Class is just a copy)
+        isA(createValue(Graph::CValueId+"::"+value, floatToC(std::stof(value)), vClasses), Hyperedges{Graph::CValueId});
+        // * In the VHDL case, call floatToStdLogicVector()
+        isA(createValue(Graph::VHDLValueId+"::"+value, floatToStdLogicVector(std::stof(value)), vClasses), Hyperedges{Graph::VHDLValueId});
+    }
+    return vClasses;
+}
+
 bool Graph::domainSpecificImport(const std::string& serialized)
 {
     // Map mergeUid to index
@@ -425,16 +451,18 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     partsOfNet = unite(partsOfNet, mergeUid);
                     Hyperedges outputOfMerge(intersect(interfacesOf(mergeUid, "merged"), outputs("merged")));
                     // Assign values to defaultValue and bias!
+                    Hyperedges vClasses(createOrFindValueClassesFor(mergeDefault));
                     Hyperedges interfacesOfMerge(interfacesOf(mergeUid));
                     Hyperedges defaultUids(intersect(interfacesOfMerge, inputs("defaultValue")));
-                    Hyperedges defaultValueUids(instantiateValueFor(defaultUids, Hyperedges{Component::Network::ValueId}));
+                    Hyperedges defaultValueUids(instantiateValueFor(defaultUids, vClasses));
                     for (const UniqueId& defUid : defaultValueUids)
                     {
                         std::cout << "Assinging default value " << mergeDefault << "\n";
                         get(defUid)->updateLabel(mergeDefault);
                     }
+                    vClasses = createOrFindValueClassesFor(mergeBias);
                     Hyperedges biasUids(intersect(interfacesOfMerge, inputs("bias")));
-                    Hyperedges biasValueUids(instantiateValueFor(biasUids, Hyperedges{Component::Network::ValueId}));
+                    Hyperedges biasValueUids(instantiateValueFor(biasUids, vClasses));
                     for (const UniqueId& biasUid : biasValueUids)
                     {
                         std::cout << "Assinging bias value " << mergeBias << "\n";
