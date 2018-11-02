@@ -64,6 +64,11 @@ int main (int argc, char **argv)
     std::size_t pos(fileNameOut.rfind("."));
     std::string name(fileNameOut.substr(0,pos));
     Hyperedges candidateIds(bg.networkClasses(name));
+    if (!candidateIds.size())
+    {
+        std::cout << "Could not find " << name << "\n";
+        return 3;
+    }
     std::string result(bg.domainSpecificExport(*candidateIds.begin()));
 
     // Store export
