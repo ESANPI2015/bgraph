@@ -139,7 +139,7 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
     YAML::Node spec;
 
     // Store toplvl model name
-    spec["model"] = get(uid)->label();
+    spec["model"] = read(uid).label();
     // Handle nodes
     YAML::Node nodesYAML(spec["nodes"]);
     // Important queries
@@ -168,23 +168,23 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         for (const UniqueId& inputUid : intersect(interfaceUids, allInputs))
         {
             YAML::Node inputYAML;
-            inputYAML["name"] = get(inputUid)->label();
+            inputYAML["name"] = read(inputUid).label();
             Hyperedges mergeUids(getMergesOfInput(Hyperedges{inputUid}));
             if (!mergeUids.size())
             {
-                std::cout << "No merge for " << get(inputUid)->label() << std::endl;
+                std::cout << "No merge for " << read(inputUid).label() << std::endl;
             }
             for (const UniqueId& mergeUid : mergeUids)
             {
-                inputYAML["type"] = get(mergeUid)->label();
+                inputYAML["type"] = read(mergeUid).label();
                 Hyperedges defaultValueUids(valuesOf(intersect(allDefaultValues, interfacesOf(Hyperedges{mergeUid}))));
                 Hyperedges biasValueUids(valuesOf(intersect(allBiasValues, interfacesOf(Hyperedges{mergeUid}))));
                 for (const UniqueId& defUid : defaultValueUids)
                 {
-                    inputYAML["default"] = get(defUid)->label();
+                    inputYAML["default"] = read(defUid).label();
                     for (const UniqueId& biasUid : biasValueUids)
                     {
-                        inputYAML["bias"] = get(biasUid)->label();
+                        inputYAML["bias"] = read(biasUid).label();
                         inputsYAML.push_back(inputYAML);
                     }
                 }
@@ -194,23 +194,23 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         for (const UniqueId& outputUid : intersect(interfaceUids, allOutputs))
         {
             YAML::Node outputYAML;
-            outputYAML["name"] = get(outputUid)->label();
+            outputYAML["name"] = read(outputUid).label();
             outputsYAML.push_back(outputYAML);
         }
         nodeYAML["id"] = nodeId;
-        nodeYAML["name"] = get(nodeUid)->label();
+        nodeYAML["name"] = read(nodeUid).label();
         // Special cases for SUBGRAPH && EXTERN
         if (std::find(superSuperClasses.begin(), superSuperClasses.end(), Graph::SubgraphId) != superSuperClasses.end())
         {
-            nodeYAML["type"] = get(Graph::SubgraphId)->label();
-            nodeYAML["subgraph_name"] = get(*superClasses.begin())->label();
+            nodeYAML["type"] = read(Graph::SubgraphId).label();
+            nodeYAML["subgraph_name"] = read(*superClasses.begin()).label();
         }
         else if (std::find(superSuperClasses.begin(), superSuperClasses.end(), Graph::ExternId) != superSuperClasses.end())
         {
-            nodeYAML["type"] = get(Graph::ExternId)->label();
-            nodeYAML["extern_name"] = get(*superClasses.begin())->label();
+            nodeYAML["type"] = read(Graph::ExternId).label();
+            nodeYAML["extern_name"] = read(*superClasses.begin()).label();
         } else {
-            nodeYAML["type"] = get(*superClasses.begin())->label();
+            nodeYAML["type"] = read(*superClasses.begin()).label();
         }
         nodesYAML.push_back(nodeYAML);
         unique2nodeId[nodeUid] = nodeId++;
@@ -222,7 +222,7 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
     for (const UniqueId& edgeUid : edges)
     {
         YAML::Node edgeYAML;
-        edgeYAML["weight"] = std::stof(get(edgeUid)->label());
+        edgeYAML["weight"] = std::stof(read(edgeUid).label());
         // Get edge input and follow chain
         Hyperedges fromOutputUids(endpointsOf(interfacesOf(Hyperedges{edgeUid},"in"),"",TraversalDirection::INVERSE));
         Hyperedges toMergeInputUids(endpointsOf(interfacesOf(Hyperedges{edgeUid},"out")));
@@ -232,20 +232,20 @@ std::string Graph::domainSpecificExport(const UniqueId& uid)
         for (const UniqueId& fromOutputUid : fromOutputUids)
         {
             // TODO: If label can be converted to a unsigned int ... use fromNodeOutputIdx
-            edgeYAML["fromNodeOutput"] = get(fromOutputUid)->label();
+            edgeYAML["fromNodeOutput"] = read(fromOutputUid).label();
             Hyperedges fromNodeUids(interfacesOf(Hyperedges{fromOutputUid},"",TraversalDirection::INVERSE));
             for (const UniqueId& fromNodeUid : fromNodeUids)
             {
-                edgeYAML["fromNode"] = get(fromNodeUid)->label();
+                edgeYAML["fromNode"] = read(fromNodeUid).label();
                 // Get edge output and follow chain
                 // Here we will get to a merge in between!!!
                 for (const UniqueId& toInputUid : toInputUids)
                 {
-                    edgeYAML["toNodeInput"] = get(toInputUid)->label();
+                    edgeYAML["toNodeInput"] = read(toInputUid).label();
                     Hyperedges toNodeUids(interfacesOf(Hyperedges{toInputUid},"",TraversalDirection::INVERSE));
                     for (const UniqueId& toNodeUid : toNodeUids)
                     {
-                        edgeYAML["toNode"] = get(toNodeUid)->label();
+                        edgeYAML["toNode"] = read(toNodeUid).label();
                         edgesYAML.push_back(edgeYAML);
                     }
                 }
@@ -458,7 +458,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     for (const UniqueId& defUid : defaultValueUids)
                     {
                         std::cout << "Assinging default value " << mergeDefault << "\n";
-                        get(defUid)->updateLabel(mergeDefault);
+                        get(defUid).updateLabel(mergeDefault);
                     }
                     vClasses = createOrFindValueClassesFor(mergeBias);
                     Hyperedges biasUids(intersect(interfacesOfMerge, inputs("bias")));
@@ -466,7 +466,7 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     for (const UniqueId& biasUid : biasValueUids)
                     {
                         std::cout << "Assinging bias value " << mergeBias << "\n";
-                        get(biasUid)->updateLabel(mergeBias);
+                        get(biasUid).updateLabel(mergeBias);
                     }
                     std::cout << dependsOn(inputOfComponent, outputOfMerge) << "\n";
                 }
@@ -590,9 +590,9 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                 for (const UniqueId& mergeInput : inputsOfMerge)
                 {
                     // Do not connect defaultValue or bias
-                    if (get(mergeInput)->label() == "defaultValue")
+                    if (read(mergeInput).label() == "defaultValue")
                         continue;
-                    if (get(mergeInput)->label() == "bias")
+                    if (read(mergeInput).label() == "bias")
                         continue;
                     Hyperedges others(endpointsOf(Hyperedges{mergeInput},"",Hypergraph::TraversalDirection::INVERSE));
                     if (!others.size())
