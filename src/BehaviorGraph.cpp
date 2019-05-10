@@ -6,17 +6,23 @@
 namespace Behavior {
 
 const UniqueId Graph::NodeId = "Behavior::Graph::Node";
+const UniqueId Graph::ExternId = "Behavior::Graph::Node::Extern";
+const UniqueId Graph::SubgraphId = "Behavior::Graph::Node::Subgraph";
 const UniqueId Graph::MergeId = "Behavior::Graph::Merge";
 const UniqueId Graph::EdgeId = "Behavior::Graph::Edge";
 const UniqueId Graph::InterfaceId = "Behavior::Graph::Interface";
-const UniqueId Graph::InputId = "Behavior::Graph::Input";
-const UniqueId Graph::OutputId = "Behavior::Graph::Output";
-const UniqueId Graph::CId = "Behavior::Graph::Interface::C";
-const UniqueId Graph::VHDLId = "Behavior::Graph::Interface::VHDL";
-const UniqueId Graph::ExternId = "Behavior::Graph::Node::Extern";
-const UniqueId Graph::SubgraphId = "Behavior::Graph::Node::Subgraph";
-const UniqueId Graph::CValueId = "Behavior::Graph::Interface::Value::C";
-const UniqueId Graph::VHDLValueId = "Behavior::Graph::Interface::Value::VHDL";
+const UniqueId Graph::MergeInterfaceId = "Behavior::Graph::Merge::Interface";
+const UniqueId Graph::InterfaceValueId = "Behavior::Graph::Interface::Value";
+
+// Predefined nodes & merges
+const UniqueId Graph::InputNodeId = "Behavior::Graph::Node::Input";
+const UniqueId Graph::OutputNodeId = "Behavior::Graph::Node::Output";
+
+// TODO: Move these to a BGRAPH Generator class!
+//const UniqueId Graph::CId = "Behavior::Graph::Interface::C";
+//const UniqueId Graph::VHDLId = "Behavior::Graph::Interface::VHDL";
+//const UniqueId Graph::CValueId = "Behavior::Graph::Interface::Value::C";
+//const UniqueId Graph::VHDLValueId = "Behavior::Graph::Interface::Value::VHDL";
 
 Graph::Graph()
 {
@@ -24,7 +30,7 @@ Graph::Graph()
 }
 
 Graph::Graph(const Hypergraph& base)
-: Software::Graph(base)
+: Software::Network(base)
 {
     setupMetaModel();
 }
@@ -35,47 +41,49 @@ Graph::~Graph()
 
 void Graph::setupMetaModel()
 {
-    Hyperedges uid, inputIds;
-    const unsigned maxMergeInputs = 10;
+    // FIXME:
+    // * Decide whether a MERGE is an algorithm or an interface with subinterfaces? Its both!
+    // * Provide default values for 'default' and 'bias'
+
+    // Interface classes
+    createInterface(Graph::InterfaceId, "Real");
+    createInterface(Graph::MergeInterfaceId, "RealArray");
+    // TODO: Shall we make 'Real' partOf 'RealArray' ? And if we do, how many? Fixed amount? Or over TERNARY partOf?
+    createValue(Graph::InterfaceValueId, "RealValue");
+
     // Three main superclasses of the behavior graph domain:
     // NODE -- EDGE -- MERGE -- NODE ... pattern
     createAlgorithm(Graph::NodeId, "NODE");
-    createAlgorithm(Graph::MergeId, "MERGE");
-    createAlgorithm(Graph::EdgeId, "EDGE");
-    // Main interfaces:
-    // One common interface type, two main input/output classes
-    createInterface(Graph::InterfaceId, "IEEE754::binary32");
-    uid = createInput(Graph::InputId, "bg_input_t");
-    uid = unite(uid, createOutput(Graph::OutputId, "bg_output_t"));
-    isA(uid, Hyperedges{Graph::InterfaceId});
+    if (!exists(Graph::MergeId))
+    {
+        createAlgorithm(Graph::MergeId, "MERGE");
+        // Standard interfaces of merges
+        Hyperedges defUids(instantiateInterfaceFor(Hyperedges{Graph::MergeId}, Hyperedges{Graph::InterfaceId}, "default"));
+        needsInterface(Hyperedges{Graph::MergeId}, defUids);
+        instantiateValueFor(defUids, Hyperedges{Graph::InterfaceValueId}, "0.0");
+        Hyperedges biasUids(instantiateInterfaceFor(Hyperedges{Graph::MergeId}, Hyperedges{Graph::InterfaceId}, "bias"));
+        needsInterface(Hyperedges{Graph::MergeId}, biasUids);
+        instantiateValueFor(biasUids, Hyperedges{Graph::InterfaceValueId}, "0.0");
+        needsInterface(Hyperedges{Graph::MergeId}, instantiateInterfaceFor(Hyperedges{Graph::MergeId}, Hyperedges{Graph::MergeInterfaceId}, "in"));
+        // NOTE: We could make instances of 'Real' partOf 'RealArray' on the fly!
+        providesInterface(Hyperedges{Graph::MergeId}, instantiateInterfaceFor(Hyperedges{Graph::MergeId}, Hyperedges{Graph::InterfaceId}, "out"));
+    }
+    if (!exists(Graph::EdgeId))
+    {
+        createAlgorithm(Graph::EdgeId, "EDGE");
+        // Standard interfaces of edges
+        needsInterface(Hyperedges{Graph::EdgeId}, instantiateInterfaceFor(Hyperedges{Graph::EdgeId}, Hyperedges{Graph::InterfaceId}, "in"));
+        Hyperedges weightUid(instantiateInterfaceFor(Hyperedges{Graph::EdgeId}, Hyperedges{Graph::InterfaceId}, "weight"));
+        needsInterface(Hyperedges{Graph::EdgeId}, weightUid);
+        instantiateValueFor(weightUid, Hyperedges{Graph::InterfaceValueId}, "1.0");
+        providesInterface(Hyperedges{Graph::EdgeId}, instantiateInterfaceFor(Hyperedges{Graph::EdgeId}, Hyperedges{Graph::InterfaceId}, "out"));
+    }
 
-    // Datatypes:
-    // In C: float
-    // In VHDL: 32 Bit std_logic_vector
-    uid = createInterface(Graph::CId, "float");
-    uid = unite(uid, createInterface(Graph::VHDLId, "std_logic_vector(31 downto 0)"));
-    isA(uid, Hyperedges{Graph::InterfaceId, Graph::InputId, Graph::OutputId});
+    // The NODE class subalgorithms
+    createAlgorithm(Graph::ExternId, "EXTERN", Hyperedges{Graph::NodeId});
+    createAlgorithm(Graph::SubgraphId, "SUBGRAPH", Hyperedges{Graph::NodeId});
 
-    // Values:
-    // One class for C and one for VHDL values
-    // TODO: Do we need a toplvl entity?
-    createValue(Graph::CValueId, "C value");
-    createValue(Graph::VHDLValueId, "VHDL value");
-
-    // The EDGE algorithm has
-    // one input: in
-    needsInterface(Hyperedges{Graph::EdgeId}, instantiateFrom(Hyperedges{Graph::InputId}, "in"));
-    // one output: out
-    providesInterface(Hyperedges{Graph::EdgeId}, instantiateFrom(Hyperedges{Graph::OutputId}, "out"));
-
-    // MERGE class interfaces (the subclasses inherit them)
-    inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "defaultValue"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "bias"));
-    for (unsigned index = 0; index < maxMergeInputs; index++)
-        inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, std::to_string(index)));
-    needsInterface(Hyperedges{Graph::MergeId}, inputIds);
-    providesInterface(Hyperedges{Graph::MergeId}, instantiateFrom(Hyperedges{Graph::OutputId}, "merged"));
+    // Built-in Algorithms (PURE BAGEL)
     // The different subclasses of MERGE
     createAlgorithm("Behavior::Graph::Merge::Sum", "SUM", Hyperedges{Graph::MergeId});
     createAlgorithm("Behavior::Graph::Merge::Product", "PRODUCT", Hyperedges{Graph::MergeId});
@@ -84,328 +92,241 @@ void Graph::setupMetaModel()
     createAlgorithm("Behavior::Graph::Merge::Mean", "MEAN", Hyperedges{Graph::MergeId});
     createAlgorithm("Behavior::Graph::Merge::Norm", "NORM", Hyperedges{Graph::MergeId});
 
-    // The NODE class subalgorithms
-    createAlgorithm(Graph::ExternId, "EXTERN", Hyperedges{Graph::NodeId});
-    createAlgorithm(Graph::SubgraphId, "SUBGRAPH", Hyperedges{Graph::NodeId});
-    isA(Hyperedges{Graph::SubgraphId}, Hyperedges{Component::Network::NetworkId});
+    // Arity 1 nodes
+    if (!exists("Behavior::Graph::Node::1-1"))
+    {
+        createAlgorithm("Behavior::Graph::Node::1-1", "NODE 1-1", Hyperedges{Graph::NodeId});
+        needsInterface(Hyperedges{"Behavior::Graph::Node::1-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::1-1"}, Hyperedges{Graph::InterfaceId}, "0"));
+        providesInterface(Hyperedges{"Behavior::Graph::Node::1-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::1-1"}, Hyperedges{Graph::InterfaceId}, "0"));
+    }
+    createAlgorithm("Behavior::Graph::Node::Pipe", "PIPE", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm(Graph::InputNodeId, "INPUT", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm(Graph::OutputNodeId, "OUTPUT", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::Divide", "DIVIDE", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::Sine", "SIN", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::Cosine", "COS", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::Tangens", "TAN", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::TangensHyperbolicus", "TANH", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::ArcusCosine", "ACOS", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::ArcusSine", "ASIN", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::ArcusTangens", "ATAN", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::Logarithm", "LOG", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::Exponential", "EXP", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::Absolute", "ABS", Hyperedges{"Behavior::Graph::Node::1-1"});
+    createAlgorithm("Behavior::Graph::Node::SquareRoot", "SQRT", Hyperedges{"Behavior::Graph::Node::1-1"});
 
-    // Subclassing by arity makes sense
-    uid = createAlgorithm("Behavior::Graph::Node::1-1", "arity1", Hyperedges{Graph::NodeId});
-    inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "0"));
-    needsInterface(uid, inputIds);
-    providesInterface(uid, instantiateFrom(Hyperedges{Graph::OutputId}, "0"));
-    createAlgorithm("Behavior::Graph::Node::Pipe", "PIPE", uid);
-    createAlgorithm("Behavior::Graph::Node::Input", "INPUT", uid);
-    createAlgorithm("Behavior::Graph::Node::Output", "OUTPUT", uid);
-    createAlgorithm("Behavior::Graph::Node::Divide", "DIVIDE", uid);
-    createAlgorithm("Behavior::Graph::Node::Sine", "SIN", uid);
-    createAlgorithm("Behavior::Graph::Node::Cosine", "COS", uid);
-    createAlgorithm("Behavior::Graph::Node::Tangens", "TAN", uid);
-    createAlgorithm("Behavior::Graph::Node::TangensHyperbolicus", "TANH", uid);
-    createAlgorithm("Behavior::Graph::Node::ArcusCosine", "ACOS", uid);
-    createAlgorithm("Behavior::Graph::Node::ArcusSine", "ASIN", uid);
-    createAlgorithm("Behavior::Graph::Node::ArcusTangens", "ATAN", uid);
-    createAlgorithm("Behavior::Graph::Node::Logarithm", "LOG", uid);
-    createAlgorithm("Behavior::Graph::Node::Exponential", "EXP", uid);
-    createAlgorithm("Behavior::Graph::Node::Absolute", "ABS", uid);
-    createAlgorithm("Behavior::Graph::Node::SquareRoot", "SQRT", uid);
-    // 2-to-1
-    uid = createAlgorithm("Behavior::Graph::Node::2-1", "arity2", Hyperedges{Graph::NodeId});
-    inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "0"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "1"));
-    needsInterface(uid, inputIds);
-    providesInterface(uid, instantiateFrom(Hyperedges{Graph::OutputId}, "0"));
-    createAlgorithm("Behavior::Graph::Node::ArcusTangens2D", "ATAN2", uid);
-    createAlgorithm("Behavior::Graph::Node::Power", "POW", uid);
-    createAlgorithm("Behavior::Graph::Node::Modulo", "MOD", uid);
-    // 3-to-1
-    uid = createAlgorithm("Behavior::Graph::Node::3-1", "arity3", Hyperedges{Graph::NodeId});
-    inputIds.clear();
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "0"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "1"));
-    inputIds=unite(inputIds,instantiateFrom(Hyperedges{Graph::InputId}, "2"));
-    needsInterface(uid, inputIds);
-    providesInterface(uid, instantiateFrom(Hyperedges{Graph::OutputId}, "0"));
-    createAlgorithm("Behavior::Graph::Node::GreaterZero", ">0", uid);
-    createAlgorithm("Behavior::Graph::Node::ApproxZero", "==0", uid);
+    // Arity 2 nodes
+    if (!exists("Behavior::Graph::Node::2-1"))
+    {
+        createAlgorithm("Behavior::Graph::Node::2-1", "NODE 2-1", Hyperedges{Graph::NodeId});
+        needsInterface(Hyperedges{"Behavior::Graph::Node::2-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::2-1"}, Hyperedges{Graph::InterfaceId}, "0"));
+        needsInterface(Hyperedges{"Behavior::Graph::Node::2-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::2-1"}, Hyperedges{Graph::InterfaceId}, "1"));
+        providesInterface(Hyperedges{"Behavior::Graph::Node::2-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::2-1"}, Hyperedges{Graph::InterfaceId}, "0"));
+    }
+    createAlgorithm("Behavior::Graph::Node::ArcusTangens2D", "ATAN2", Hyperedges{"Behavior::Graph::Node::2-1"});
+    createAlgorithm("Behavior::Graph::Node::Power", "POW", Hyperedges{"Behavior::Graph::Node::2-1"});
+    createAlgorithm("Behavior::Graph::Node::Modulo", "MOD", Hyperedges{"Behavior::Graph::Node::2-1"});
+
+    // Arity 3 nodes
+    if (!exists("Behavior::Graph::Node::3-1"))
+    {
+        createAlgorithm("Behavior::Graph::Node::3-1", "NODE 3-1", Hyperedges{Graph::NodeId});
+        needsInterface(Hyperedges{"Behavior::Graph::Node::3-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::3-1"}, Hyperedges{Graph::InterfaceId}, "0"));
+        needsInterface(Hyperedges{"Behavior::Graph::Node::3-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::3-1"}, Hyperedges{Graph::InterfaceId}, "1"));
+        needsInterface(Hyperedges{"Behavior::Graph::Node::3-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::3-1"}, Hyperedges{Graph::InterfaceId}, "2"));
+        providesInterface(Hyperedges{"Behavior::Graph::Node::3-1"}, instantiateInterfaceFor(Hyperedges{"Behavior::Graph::Node::3-1"}, Hyperedges{Graph::InterfaceId}, "0"));
+    }
+    createAlgorithm("Behavior::Graph::Node::GreaterZero", ">0", Hyperedges{"Behavior::Graph::Node::3-1"});
+    createAlgorithm("Behavior::Graph::Node::ApproxZero", "==0", Hyperedges{"Behavior::Graph::Node::3-1"});
+
+    // Pregenerated entities (see Generator class in lib/componentnet)
+    // TODO: Make two concrete interface classes (one for C++ and one for VHDL)
+    //       Plain types: float and std_logic_vector(31 downto 0)
+    // TODO: Move to a BGRAPH Generator class
 }
 
-std::string Graph::domainSpecificExport(const UniqueId& uid)
+std::string Graph::exportModel(const UniqueId& uid) const
 {
-    std::map< UniqueId,unsigned > unique2nodeId;
-    std::stringstream ss;
-    YAML::Node spec;
+    YAML::Node doc;
+    doc["model"] = access(uid).label();
 
-    // Store toplvl model name
-    spec["model"] = read(uid).label();
     // Handle nodes
-    YAML::Node nodesYAML(spec["nodes"]);
-    // Important queries
-    Hyperedges allParts(componentsOf(Hyperedges{uid}));
-    Hyperedges allDefaultValues(inputs("defaultValue"));
-    Hyperedges allBiasValues(inputs("bias"));
-    Hyperedges allInputs(inputs());
-    Hyperedges allOutputs(outputs());
-    Hyperedges superClassesOfAllNodes(algorithmClasses("",Hyperedges{Graph::NodeId}));
-    Hyperedges nodes(intersect(instancesOf(superClassesOfAllNodes), allParts));
-    // TODO: Shall we preserve ids? As we did in hwgraph lib?
-    unsigned nodeId = 1;
-    for (const UniqueId& nodeUid : nodes)
+    Hyperedges partUids(componentsOf(Hyperedges{uid}));
+    Hyperedges nodeUids(instancesOf(algorithmClasses("",Hyperedges{Graph::NodeId})));
+    Hyperedges externNodeUids(instancesOf(algorithmClasses("",Hyperedges{Graph::ExternId})));
+    Hyperedges subgraphNodeUids(instancesOf(algorithmClasses("",Hyperedges{Graph::SubgraphId})));
+    for (const UniqueId& partUid : intersect(partUids, nodeUids))
     {
-        YAML::Node nodeYAML;
-        Hyperedges superClasses(instancesOf(Hyperedges{nodeUid}, "", TraversalDirection::FORWARD));
-        Hyperedges superSuperClasses(subclassesOf(superClasses,"", TraversalDirection::FORWARD));
-        if (superClasses.empty())
+        YAML::Node node;
+        node["id"] = partUid;
+        node["name"] = access(partUid).label();
+        // Handle inputs
+        Hyperedges partInputUids(inputsOf(Hyperedges{partUid}));
+        for (const UniqueId& partInputUid : partInputUids)
         {
-            std::cout << "No superclass for " << nodeUid << "\n";
-            continue;
-        }
-        // Handle interfaces
-        Hyperedges interfaceUids(interfacesOf(Hyperedges{nodeUid}));
-        YAML::Node inputsYAML(nodeYAML["inputs"]);
-        for (const UniqueId& inputUid : intersect(interfaceUids, allInputs))
-        {
-            YAML::Node inputYAML;
-            inputYAML["name"] = read(inputUid).label();
-            Hyperedges mergeUids(getMergesOfInput(Hyperedges{inputUid}));
-            if (!mergeUids.size())
-            {
-                std::cout << "No merge for " << read(inputUid).label() << std::endl;
-            }
+            YAML::Node input;
+            input["name"] = access(partInputUid).label();
+            // Handle merge
+            Hyperedges mergeUids(outputsOf(endpointsOf(Hyperedges{partInputUid}, "out", TraversalDirection::INVERSE), "", TraversalDirection::INVERSE));
             for (const UniqueId& mergeUid : mergeUids)
             {
-                inputYAML["type"] = read(mergeUid).label();
-                Hyperedges defaultValueUids(valuesOf(intersect(allDefaultValues, interfacesOf(Hyperedges{mergeUid}))));
-                Hyperedges biasValueUids(valuesOf(intersect(allBiasValues, interfacesOf(Hyperedges{mergeUid}))));
-                for (const UniqueId& defUid : defaultValueUids)
+                input["type"] = access(mergeUid).label();
+                Hyperedges defValueUids(valuesOf(inputsOf(Hyperedges{mergeUid}, "default")));
+                Hyperedges biasValueUids(valuesOf(inputsOf(Hyperedges{mergeUid}, "bias")));
+                for (const UniqueId& defValueUid : defValueUids)
                 {
-                    inputYAML["default"] = read(defUid).label();
-                    for (const UniqueId& biasUid : biasValueUids)
+                    input["default"] = std::stof(access(defValueUid).label());
+                    for (const UniqueId& biasValueUid : biasValueUids)
                     {
-                        inputYAML["bias"] = read(biasUid).label();
-                        inputsYAML.push_back(inputYAML);
+                        input["bias"] = std::stof(access(biasValueUid).label());
+                        node["inputs"].push_back(input);
                     }
                 }
             }
         }
-        YAML::Node outputsYAML(nodeYAML["outputs"]);
-        for (const UniqueId& outputUid : intersect(interfaceUids, allOutputs))
+        // Handle outputs
+        Hyperedges partOutputUids(outputsOf(Hyperedges{partUid}));
+        for (const UniqueId& partOutputUid : partOutputUids)
         {
-            YAML::Node outputYAML;
-            outputYAML["name"] = read(outputUid).label();
-            outputsYAML.push_back(outputYAML);
+            YAML::Node output;
+            output["name"] = access(partOutputUid).label();
+            node["outputs"].push_back(output);
         }
-        nodeYAML["id"] = nodeId;
-        nodeYAML["name"] = read(nodeUid).label();
-        // Special cases for SUBGRAPH && EXTERN
-        if (std::find(superSuperClasses.begin(), superSuperClasses.end(), Graph::SubgraphId) != superSuperClasses.end())
+        // Handle node types
+        Hyperedges superclassUids(instancesOf(Hyperedges{partUid},"",TraversalDirection::FORWARD));
+        if (std::find(externNodeUids.begin(), externNodeUids.end(), partUid) != externNodeUids.end())
         {
-            nodeYAML["type"] = read(Graph::SubgraphId).label();
-            nodeYAML["subgraph_name"] = read(*superClasses.begin()).label();
+            node["type"] = access(Graph::ExternId).label();
+            for (const UniqueId& superclassUid : superclassUids)
+            {
+                node["extern_name"] = access(superclassUid).label();
+                doc["nodes"].push_back(node);
+            }
         }
-        else if (std::find(superSuperClasses.begin(), superSuperClasses.end(), Graph::ExternId) != superSuperClasses.end())
+        else if (std::find(subgraphNodeUids.begin(), subgraphNodeUids.end(), partUid) != subgraphNodeUids.end())
         {
-            nodeYAML["type"] = read(Graph::ExternId).label();
-            nodeYAML["extern_name"] = read(*superClasses.begin()).label();
-        } else {
-            nodeYAML["type"] = read(*superClasses.begin()).label();
+            node["type"] = access(Graph::SubgraphId).label();
+            for (const UniqueId& superclassUid : superclassUids)
+            {
+                node["subgraph_name"] = access(superclassUid).label();
+                doc["nodes"].push_back(node);
+            }
         }
-        nodesYAML.push_back(nodeYAML);
-        unique2nodeId[nodeUid] = nodeId++;
+        else
+        {
+            for (const UniqueId& superclassUid : superclassUids)
+            {
+                node["type"] = access(superclassUid).label();
+                doc["nodes"].push_back(node);
+            }
+        }
     }
 
     // Handle edges
-    YAML::Node edgesYAML(spec["edges"]);
-    Hyperedges edges(intersect(instancesOf(algorithmClasses("",Hyperedges{Graph::EdgeId})), allParts));
-    for (const UniqueId& edgeUid : edges)
+    Hyperedges edgeUids(instancesOf(algorithmClasses("",Hyperedges{Graph::EdgeId})));
+    for (const UniqueId& edgeUid : intersect(partUids, edgeUids))
     {
-        YAML::Node edgeYAML;
-        edgeYAML["weight"] = std::stof(read(edgeUid).label());
-        // Get edge input and follow chain
-        Hyperedges fromOutputUids(endpointsOf(interfacesOf(Hyperedges{edgeUid},"in"),"",TraversalDirection::INVERSE));
-        Hyperedges toMergeInputUids(endpointsOf(interfacesOf(Hyperedges{edgeUid},"out")));
-        Hyperedges toMergeNodeUids(interfacesOf(toMergeInputUids,"",TraversalDirection::INVERSE));
-        Hyperedges toMergeOutputUids(interfacesOf(toMergeNodeUids, "merged"));
-        Hyperedges toInputUids(endpointsOf(toMergeOutputUids));
-        for (const UniqueId& fromOutputUid : fromOutputUids)
+        YAML::Node edge;
+        // weight, fromNode, toNode, fromNodeOutput, toNodeOutput
+        Hyperedges weightValueUids(valuesOf(inputsOf(Hyperedges{edgeUid}, "weight")));
+        Hyperedges predIfUids(endpointsOf(inputsOf(Hyperedges{edgeUid}, "in"),"",TraversalDirection::INVERSE));
+        Hyperedges succIfUids(endpointsOf(outputsOf(inputsOf(endpointsOf(outputsOf(Hyperedges{edgeUid}, "out")), "", TraversalDirection::INVERSE),"out")));
+        for (const UniqueId& weightValueUid : weightValueUids)
         {
-            // TODO: If label can be converted to a unsigned int ... use fromNodeOutputIdx
-            edgeYAML["fromNodeOutput"] = read(fromOutputUid).label();
-            Hyperedges fromNodeUids(interfacesOf(Hyperedges{fromOutputUid},"",TraversalDirection::INVERSE));
-            for (const UniqueId& fromNodeUid : fromNodeUids)
+            edge["weight"] = std::stof(access(weightValueUid).label());
+            for (const UniqueId& predIfUid : predIfUids)
             {
-                edgeYAML["fromNode"] = read(fromNodeUid).label();
-                // Get edge output and follow chain
-                // Here we will get to a merge in between!!!
-                for (const UniqueId& toInputUid : toInputUids)
+                edge["fromNodeOutput"] = access(predIfUid).label();
+                Hyperedges predNodeUids(outputsOf(Hyperedges{predIfUid}, "", TraversalDirection::INVERSE));
+                for (const UniqueId& predNodeUid : predNodeUids)
                 {
-                    edgeYAML["toNodeInput"] = read(toInputUid).label();
-                    Hyperedges toNodeUids(interfacesOf(Hyperedges{toInputUid},"",TraversalDirection::INVERSE));
-                    for (const UniqueId& toNodeUid : toNodeUids)
+                    edge["fromNode"] = access(predNodeUid).label();
+                    for (const UniqueId& succIfUid : succIfUids)
                     {
-                        edgeYAML["toNode"] = read(toNodeUid).label();
-                        edgesYAML.push_back(edgeYAML);
+                        edge["toNodeInput"] = access(succIfUid).label();
+                        Hyperedges succNodeUids(inputsOf(Hyperedges{succIfUid}, "", TraversalDirection::INVERSE));
+                        for (const UniqueId& succNodeUid : succNodeUids)
+                        {
+                            edge["toNode"] = access(succNodeUid).label();
+                            doc["edges"].push_back(edge);
+                        }
                     }
                 }
             }
         }
     }
 
-    ss << spec;
+    std::stringstream ss;
+    ss << doc;
     return ss.str();
 }
 
-Hyperedges Graph::getMergesOfInput(const Hyperedges& inputs, const std::string& label)
+UniqueId Graph::importModel(const std::string& serializedModel)
 {
-    Hyperedges allMerges = instancesOf(algorithmClasses("", Hyperedges{Graph::MergeId}), label);
-    Hyperedges allEndpoints = endpointsOf(inputs, "merged", Software::Graph::TraversalDirection::INVERSE); // all outputs of some merges?
-    Hyperedges allParentsOfEndpoints = childrenOf(allEndpoints, label, Software::Graph::TraversalDirection::INVERSE);
-    return intersect(allMerges, allParentsOfEndpoints);
-}
+    UniqueId modelUid;
+    YAML::Node doc = YAML::Load(serializedModel);
+    // Check if nodes exist. If not, reject model
+    const YAML::Node& nodesYAML(doc["nodes"]);
+    if (!nodesYAML.IsDefined())
+        return modelUid;
+    // Create SUBGRAPH class
+    std::string label("SUBGRAPH");
+    if (doc["model"].IsDefined())
+        label = doc["model"].as<std::string>();
+    modelUid = Graph::SubgraphId+"::"+label;
+    createAlgorithm(modelUid, label, Hyperedges{Graph::SubgraphId});
 
-std::string Graph::floatToStdLogicVector(const float value)
-{
-    char buf[20];
-    unsigned char *ptr = (unsigned char *)&value;
-    std::snprintf(buf, 20, "x\"%.2x%.2x%.2x%.2x\"", ptr[3], ptr[2], ptr[1], ptr[0]);
-    return std::string(buf);
-}
-
-std::string Graph::floatToC(const float value)
-{
-    return std::to_string(value)+"f";
-}
-
-Hyperedges Graph::createOrFindValueClassesFor(const std::string& value)
-{
-    Hyperedges vClasses(valueClasses(value));
-    if (!vClasses.size())
-    {
-        std::cout << "Creating abstract value class for " << value << "\n";
-        vClasses = unite(vClasses, createValue(Component::Network::ValueId+"::"+value, value));
-        // * Generate a SPECIFIC value classes for each language (whereas the C Class is just a copy)
-        isA(createValue(Graph::CValueId+"::"+value, floatToC(std::stof(value)), vClasses), Hyperedges{Graph::CValueId});
-        // * In the VHDL case, call floatToStdLogicVector()
-        isA(createValue(Graph::VHDLValueId+"::"+value, floatToStdLogicVector(std::stof(value)), vClasses), Hyperedges{Graph::VHDLValueId});
-    }
-    return vClasses;
-}
-
-bool Graph::domainSpecificImport(const std::string& serialized)
-{
-    // Map mergeUid to index
-    std::map<UniqueId, unsigned> mergeIndex;
-    // Map from old ids (in file) to new ids
+    // Handle nodes
     std::map<UniqueId, Hyperedges> old2new;
-    YAML::Node spec = YAML::Load(serialized);
-    // Create a network class
-    std::string name("NONAME");
-    if (spec["model"].IsDefined())
-        name = spec["model"].as<std::string>();
-    Hyperedges partsOfNet;
-    Hyperedges networkUid(createNetwork(Graph::SubgraphId+"::"+name, name, Hyperedges{Graph::SubgraphId}));
-    if (!spec["nodes"].IsDefined())
-        return false;
-    const YAML::Node& nodesYAML(spec["nodes"]);
-    if (nodesYAML.IsDefined())
+    std::map<std::string, Hyperedges> label2node;
+    for (YAML::Node::const_iterator nit = nodesYAML.begin(); nit != nodesYAML.end(); ++nit)
     {
-        for (YAML::Node::const_iterator nit = nodesYAML.begin(); nit != nodesYAML.end(); ++nit)
+        const YAML::Node& nodeYAML(*nit);
+        const UniqueId& id(nodeYAML["id"].as<UniqueId>());
+        const std::string& type(nodeYAML["type"].as<std::string>());
+        std::string label(id);
+        if (nodeYAML["name"].IsDefined())
+            label = nodeYAML["name"].as<std::string>();
+        // Find superclass of given name
+        Hyperedges superUids(algorithmClasses(type, Hyperedges{Graph::NodeId}));
+        if (superUids.empty())
         {
-            const YAML::Node& nodeYAML(*nit);
-            const UniqueId& id(nodeYAML["id"].as<UniqueId>());
-            const std::string& type(nodeYAML["type"].as<std::string>());
-            Hyperedges super(algorithmClasses(type));
-            if (super.empty())
-            {
-                std::cout << "Warning, superclass " << type << " not found\n";
-                continue;
-            }
-            std::string label(id);
-            if (nodeYAML["name"].IsDefined())
-                label = nodeYAML["name"].as<std::string>();
-            const YAML::Node& inputsYAML(nodeYAML["inputs"]);
-            const YAML::Node& outputsYAML(nodeYAML["outputs"]);
-            const YAML::Node& subgraph_nameYAML(nodeYAML["subgraph_name"]);
-            const YAML::Node& extern_nameYAML(nodeYAML["extern_name"]);
+            // TODO: This should be an error case?!
+            continue;
+        }
 
-            // For SUBGRAPH and EXTERN nodes we first have to create a subclass & interfaces (if it does not exist yet)
-            if ((type == "SUBGRAPH") || (type == "EXTERN"))
-            {
-                // Define the superclassLabel
-                std::string superLabel(label);
-                if (subgraph_nameYAML.IsDefined())
-                    superLabel = subgraph_nameYAML.as<std::string>();
-                else if (extern_nameYAML.IsDefined())
-                    superLabel = extern_nameYAML.as<std::string>();
-                // super contains now either SUBGRAPH || EXTERN
-                Hyperedges sub(algorithmClasses(superLabel, super));
-                if (sub.empty())
-                {
-                    // First occurrence: Create a subclass with interfaces
-                    std::cout << "Create subclass " << superLabel << " of type " << type << "\n";
-                    sub = createAlgorithm(superLabel, superLabel, super);
-                }
-                // Create interfaces
-                if (inputsYAML.IsDefined())
-                {
-                    for (YAML::Node::const_iterator it = inputsYAML.begin(); it != inputsYAML.end(); it++)
-                    {
-                        const YAML::Node& inputYAML(*it);
-                        std::string inputLabel;
-                        if (inputYAML["name"].IsDefined())
-                        {
-                            inputLabel = inputYAML["name"].as<std::string>();
-                        } else {
-                            inputLabel = inputYAML["idx"].as<std::string>();
-                        }
-                        // Search for input
-                        Hyperedges inputOfComponent(intersect(inputs(inputLabel), interfacesOf(sub, inputLabel)));
-                        if (inputOfComponent.size())
-                            continue;
-                        std::cout << "Create input " << inputLabel << " for " << superLabel << " node\n";
-                        needsInterface(sub, instantiateInterfaceFor(sub, Hyperedges{Graph::InputId}, inputLabel));
-                    }
-                }
-                if (outputsYAML.IsDefined())
-                {
-                    for (YAML::Node::const_iterator it = outputsYAML.begin(); it != outputsYAML.end(); it++)
-                    {
-                        const YAML::Node& outputYAML(*it);
-                        std::string outputLabel;
-                        if (outputYAML["name"].IsDefined())
-                        {
-                            outputLabel = outputYAML["name"].as<std::string>();
-                        } else {
-                            outputLabel = outputYAML["idx"].as<std::string>();
-                        }
-                        // Search for output
-                        Hyperedges outputOfComponent(intersect(outputs(outputLabel), interfacesOf(sub, outputLabel)));
-                        if (outputOfComponent.size())
-                            continue;
-                        std::cout << "Create output " << outputLabel << " for " << superLabel << " node\n";
-                        providesInterface(sub, instantiateInterfaceFor(sub, Hyperedges{Graph::OutputId}, outputLabel));
-                    }
-                }
-                // The new sub class is the super class of the following code
-                super = sub;
-            }
+        bool isExternNode(std::find(superUids.begin(), superUids.end(), Graph::ExternId) != superUids.end());
+        bool isSubgraphNode(std::find(superUids.begin(), superUids.end(), Graph::SubgraphId) != superUids.end());
+        if (isExternNode)
+        {
+            // Extern node
+            // extern_name defines the superclass!
+            const std::string& subtype(nodeYAML["extern_name"].as<std::string>());
+            superUids = algorithmClasses(subtype, Hyperedges{Graph::ExternId});
+            if (superUids.empty())
+                superUids = createAlgorithm(Graph::ExternId+"::"+subtype, subtype, Hyperedges{Graph::ExternId});
+        }
+        else if (isSubgraphNode)
+        {
+            // Subgraph node
+            // subgraph_name defines the superclass!
+            const std::string& subtype(nodeYAML["subgraph_name"].as<std::string>());
+            superUids = algorithmClasses(subtype, Hyperedges{Graph::SubgraphId});
+            if (superUids.empty())
+                superUids = createAlgorithm(Graph::SubgraphId+"::"+subtype, subtype, Hyperedges{Graph::SubgraphId});
+        }
 
-            // Instantiate node
-            std::cout << "Instantiating " << label << " of type " << super << "\n";
-            Hyperedges uid(instantiateComponent(super, label));
-            old2new[id] = uid;
-            partsOfNet = unite(partsOfNet, uid);
-
-            // For every input, create and connect the correct MERGE algorithm
+        const YAML::Node& inputsYAML(nodeYAML["inputs"]);
+        const YAML::Node& outputsYAML(nodeYAML["outputs"]);
+        // Adding IO info to superclasses if needed
+        if (isExternNode || isSubgraphNode)
+        {
+            // Create IOs (if they do not exist)
             if (inputsYAML.IsDefined())
             {
                 for (YAML::Node::const_iterator it = inputsYAML.begin(); it != inputsYAML.end(); it++)
                 {
-                    // Create input
                     const YAML::Node& inputYAML(*it);
-                    // Search by string or idx
                     std::string inputLabel;
                     if (inputYAML["name"].IsDefined())
                     {
@@ -414,65 +335,12 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                         inputLabel = inputYAML["idx"].as<std::string>();
                     }
                     // Search for input
-                    Hyperedges inputOfComponent(intersect(inputs(inputLabel), interfacesOf(uid, inputLabel)));
-                    if (!inputOfComponent.size())
-                    {
-                        std::cout << "Could not find input " << inputLabel << " for " << label << " node\n";
+                    Hyperedges inputOfComponent(inputsOf(superUids, inputLabel));
+                    if (inputOfComponent.size())
                         continue;
-                    }
-                    // For INPUT nodes: Make their input(s) the input(s) of the toplvl node
-                    // Also, suppress merge creation
-                    if (type == "INPUT")
-                    {
-                        for (const UniqueId& inputUid : inputOfComponent)
-                        {
-                            std::cout << "Export input " << inputUid << " by creating alias interface named " << label << std::endl;
-                            needsInterface(networkUid, instantiateAliasInterfaceFor(networkUid, Hyperedges{inputUid}, label));
-                        }
-                        std::cout << "Skipping merge creation for " << label << " node\n";
-                        continue;
-                    }
-
-                    // Create merge
-                    const std::string& mergeType(inputYAML["type"].as<std::string>());
-                    const std::string& mergeBias(inputYAML["bias"].as<std::string>());
-                    const std::string& mergeDefault(inputYAML["default"].as<std::string>());
-                    // Search for merge class
-                    Hyperedges mergeClasses(algorithmClasses(mergeType, Hyperedges{Graph::MergeId}));
-                    if (!mergeClasses.size())
-                    {
-                        std::cout << "Warning, could not find merge type " << mergeType << "\n";
-                        continue;
-                    }
-                    // NOTE: The merge NEVER exists at this point (even if the input exists)
-                    // Instantiate merge
-                    std::cout << "Instantiating merge " << mergeType << " for input " << inputLabel << "\n";
-                    Hyperedges mergeUid(instantiateComponent(mergeClasses));
-                    partsOfNet = unite(partsOfNet, mergeUid);
-                    Hyperedges outputOfMerge(intersect(interfacesOf(mergeUid, "merged"), outputs("merged")));
-                    // Assign values to defaultValue and bias!
-                    Hyperedges vClasses(createOrFindValueClassesFor(mergeDefault));
-                    Hyperedges interfacesOfMerge(interfacesOf(mergeUid));
-                    Hyperedges defaultUids(intersect(interfacesOfMerge, inputs("defaultValue")));
-                    Hyperedges defaultValueUids(instantiateValueFor(defaultUids, vClasses));
-                    for (const UniqueId& defUid : defaultValueUids)
-                    {
-                        std::cout << "Assinging default value " << mergeDefault << "\n";
-                        get(defUid).updateLabel(mergeDefault);
-                    }
-                    vClasses = createOrFindValueClassesFor(mergeBias);
-                    Hyperedges biasUids(intersect(interfacesOfMerge, inputs("bias")));
-                    Hyperedges biasValueUids(instantiateValueFor(biasUids, vClasses));
-                    for (const UniqueId& biasUid : biasValueUids)
-                    {
-                        std::cout << "Assinging bias value " << mergeBias << "\n";
-                        get(biasUid).updateLabel(mergeBias);
-                    }
-                    std::cout << dependsOn(inputOfComponent, outputOfMerge) << "\n";
+                    needsInterface(superUids, instantiateInterfaceFor(superUids, Hyperedges{Graph::InterfaceId}, inputLabel));
                 }
             }
-
-            // Create specified outputs
             if (outputsYAML.IsDefined())
             {
                 for (YAML::Node::const_iterator it = outputsYAML.begin(); it != outputsYAML.end(); it++)
@@ -485,137 +353,202 @@ bool Graph::domainSpecificImport(const std::string& serialized)
                     } else {
                         outputLabel = outputYAML["idx"].as<std::string>();
                     }
-                    Hyperedges outputOfComponent(intersect(outputs(outputLabel), interfacesOf(uid, outputLabel)));
-                    if (!outputOfComponent.size())
-                    {
-                        std::cout << "Could not find output " << outputLabel << " for " << label << " node\n";
+                    // Search for output
+                    Hyperedges outputOfComponent(outputsOf(superUids, outputLabel));
+                    if (outputOfComponent.size())
                         continue;
-                    }
-                    // For OUTPUT nodes: Make their output(s) the output(s) of the toplvl node
-                    if (type == "OUTPUT")
+                    providesInterface(superUids, instantiateInterfaceFor(superUids, Hyperedges{Graph::InterfaceId}, outputLabel));
+                }
+            }
+        }
+
+        // Instantiate part
+        Hyperedges uid(instantiateComponent(superUids, label));
+        partOfComponent(uid, Hyperedges{modelUid});
+        old2new[id] = uid;
+        label2node[label] = uid;
+
+        // Instantiate MERGE given IO info
+        if (inputsYAML.IsDefined())
+        {
+            for (YAML::Node::const_iterator it = inputsYAML.begin(); it != inputsYAML.end(); it++)
+            {
+                const YAML::Node& inputYAML(*it);
+                std::string inputLabel;
+                if (inputYAML["name"].IsDefined())
+                {
+                    inputLabel = inputYAML["name"].as<std::string>();
+                } else {
+                    inputLabel = inputYAML["idx"].as<std::string>();
+                }
+                // Search for input
+                Hyperedges inputOfComponent(inputsOf(uid, inputLabel));
+                if (!inputOfComponent.size())
+                    continue;
+
+                // For INPUT nodes: Make their input(s) the input(s) of the toplvl node
+                // Also, suppress merge creation
+                bool isInputNode(std::find(superUids.begin(), superUids.end(), Graph::InputNodeId) != superUids.end());
+                if (isInputNode)
+                {
+                    for (const UniqueId& inputUid : inputOfComponent)
                     {
-                        for (const UniqueId& outputUid : outputOfComponent)
-                        {
-                            std::cout << "Export output " << outputUid << " by creating alias interface named " << label << std::endl;
-                            providesInterface(networkUid, instantiateAliasInterfaceFor(networkUid, Hyperedges{outputUid}, label));
-                        }
+                        needsInterface(Hyperedges{modelUid}, instantiateAliasInterfaceFor(Hyperedges{modelUid}, Hyperedges{inputUid}, label));
+                    }
+                    continue;
+                }
+                
+                // For the found input, create and connect a merge (if it does not exist)
+                const std::string& mergeType(inputYAML["type"].as<std::string>());
+                const std::string& mergeBias(inputYAML["bias"].as<std::string>());
+                const std::string& mergeDefault(inputYAML["default"].as<std::string>());
+                Hyperedges mergeUids(outputsOf(endpointsOf(inputOfComponent, "out", TraversalDirection::INVERSE), mergeType, TraversalDirection::INVERSE));
+                if (mergeUids.empty())
+                {
+                    Hyperedges mergeClassUids(algorithmClasses(mergeType, Hyperedges{Graph::MergeId}));
+                    if (mergeClassUids.empty())
+                        continue;
+                    Hyperedges newMergeUids(instantiateComponent(mergeClassUids));
+                    Hyperedges defValueUids(valuesOf(inputsOf(newMergeUids, "default")));
+                    for (const UniqueId& defValueUid : defValueUids)
+                    {
+                        access(defValueUid).updateLabel(mergeDefault);
+                    }
+                    Hyperedges biasValueUids(valuesOf(inputsOf(newMergeUids, "bias")));
+                    for (const UniqueId& biasValueUid : biasValueUids)
+                    {
+                        access(biasValueUid).updateLabel(mergeBias);
+                    }
+                    dependsOn(inputOfComponent, outputsOf(newMergeUids, "out"));
+                    partOfComponent(newMergeUids, Hyperedges{modelUid});
+                }
+            }
+        }
+
+        // Export outputs
+        if (outputsYAML.IsDefined())
+        {
+            for (YAML::Node::const_iterator it = outputsYAML.begin(); it != outputsYAML.end(); it++)
+            {
+                const YAML::Node& outputYAML(*it);
+                std::string outputLabel;
+                if (outputYAML["name"].IsDefined())
+                {
+                    outputLabel = outputYAML["name"].as<std::string>();
+                } else {
+                    outputLabel = outputYAML["idx"].as<std::string>();
+                }
+                Hyperedges outputOfComponent(outputsOf(uid, outputLabel));
+                if (!outputOfComponent.size())
+                    continue;
+
+                // For OUTPUT nodes: Make their output(s) the output(s) of the toplvl node
+                bool isOutputNode(std::find(superUids.begin(), superUids.end(), Graph::OutputNodeId) != superUids.end());
+                if (isOutputNode)
+                {
+                    for (const UniqueId& outputUid : outputOfComponent)
+                    {
+                        providesInterface(Hyperedges{modelUid}, instantiateAliasInterfaceFor(Hyperedges{modelUid}, Hyperedges{outputUid}, label));
                     }
                 }
             }
         }
-    } else {
-        std::cout << "No nodes section\n";
-        return false;
     }
 
     // Treat edges
-    const YAML::Node& edgesYAML(spec["edges"]);
-    if (edgesYAML.IsDefined())
+    const YAML::Node& edgesYAML(doc["edges"]);
+    if (!edgesYAML.IsDefined())
+        return modelUid;
+
+    for (YAML::Node::const_iterator eit = edgesYAML.begin(); eit != edgesYAML.end(); ++eit)
     {
-        for (YAML::Node::const_iterator eit = edgesYAML.begin(); eit != edgesYAML.end(); ++eit)
+        const YAML::Node& edgeYAML(*eit);
+        const std::string& weight(edgeYAML["weight"].as<std::string>());
+        std::string fromLabel, fromOutputLabel, toLabel, toInputLabel;
+
+        // We can also connect by names, right? Yes :)
+        Hyperedges fromNodeIds;
+        if (edgeYAML["fromNode"].IsDefined())
         {
-            const YAML::Node& edgeYAML(*eit);
-            const std::string& label(edgeYAML["weight"].as<std::string>());
-            std::string fromLabel, fromOutputLabel, toLabel, toInputLabel;
-            // We can also connect by names, right? Yes :)
-            Hyperedges fromNodeIds;
-            if (edgeYAML["fromNode"].IsDefined())
-            {
-                // Find UnqiueIds by label
-                fromLabel = edgeYAML["fromNode"].as<std::string>();
-                fromNodeIds = algorithms(fromLabel);
-            } else {
-                // Find UniqueIds by remapped ids
-                fromLabel = edgeYAML["fromNodeId"].as<std::string>();
-                fromNodeIds = old2new[fromLabel];
-            }
-            if (fromNodeIds.empty())
-            {
-                std::cout << "Could not find node " << fromLabel << "\n";
-                continue;
-            }
-            Hyperedges toNodeIds;
-            if (edgeYAML["toNode"].IsDefined())
-            {
-                // Find UnqiueIds by label
-                toLabel = edgeYAML["toNode"].as<std::string>();
-                toNodeIds = algorithms(toLabel);
-            } else {
-                // Find UniqueIds by remapped ids
-                toLabel = edgeYAML["toNodeId"].as<std::string>();
-                toNodeIds = old2new[toLabel];
-            }
-            if (toNodeIds.empty())
-            {
-                std::cout << "Could not find node " << toLabel << "\n";
-                continue;
-            }
-            if (edgeYAML["fromNodeOutput"].IsDefined())
-            {
-                // Find UnqiueIds by label
-                fromOutputLabel = edgeYAML["fromNodeOutput"].as<std::string>();
-            } else {
-                // Find UniqueIds by remapped ids
-                fromOutputLabel = edgeYAML["fromNodeOutputIdx"].as<std::string>();
-            }
-            Hyperedges fromNodeOutputIds(intersect(interfacesOf(fromNodeIds, fromOutputLabel), outputs(fromOutputLabel)));
-            if (fromNodeOutputIds.empty())
-            {
-                std::cout << "Node " << fromLabel << " has no output " << fromOutputLabel << "\n";
-                continue;
-            }
-            if (edgeYAML["toNodeInput"].IsDefined())
-            {
-                // Find UnqiueIds by label
-                toInputLabel = edgeYAML["toNodeInput"].as<std::string>();
-            } else {
-                // Find UniqueIds by remapped ids
-                toInputLabel = edgeYAML["toNodeInputIdx"].as<std::string>();
-            }
-            Hyperedges toNodeInputIds(intersect(interfacesOf(toNodeIds, toInputLabel), inputs(toInputLabel)));
-            if (toNodeInputIds.empty())
-            {
-                std::cout << "Node " << toLabel << " has no input " << toInputLabel << "\n";
-                continue;
-            }
+            // Find UnqiueIds by label
+            fromLabel = edgeYAML["fromNode"].as<std::string>();
+            fromNodeIds = label2node[fromLabel];
+        } else {
+            // Find UniqueIds by remapped ids
+            fromLabel = edgeYAML["fromNodeId"].as<std::string>();
+            fromNodeIds = old2new[fromLabel];
+        }
+        if (fromNodeIds.empty())
+            continue;
+        Hyperedges toNodeIds;
+        if (edgeYAML["toNode"].IsDefined())
+        {
+            // Find UnqiueIds by label
+            toLabel = edgeYAML["toNode"].as<std::string>();
+            toNodeIds = label2node[toLabel];
+        } else {
+            // Find UniqueIds by remapped ids
+            toLabel = edgeYAML["toNodeId"].as<std::string>();
+            toNodeIds = old2new[toLabel];
+        }
+        if (toNodeIds.empty())
+            continue;
+        if (edgeYAML["fromNodeOutput"].IsDefined())
+        {
+            // Find UnqiueIds by label
+            fromOutputLabel = edgeYAML["fromNodeOutput"].as<std::string>();
+        } else {
+            // Find UniqueIds by remapped ids
+            fromOutputLabel = edgeYAML["fromNodeOutputIdx"].as<std::string>();
+        }
+        Hyperedges fromNodeOutputIds(outputsOf(fromNodeIds, fromOutputLabel));
+        if (fromNodeOutputIds.empty())
+            continue;
+        if (edgeYAML["toNodeInput"].IsDefined())
+        {
+            // Find UnqiueIds by label
+            toInputLabel = edgeYAML["toNodeInput"].as<std::string>();
+        } else {
+            // Find UniqueIds by remapped ids
+            toInputLabel = edgeYAML["toNodeInputIdx"].as<std::string>();
+        }
+        Hyperedges toNodeInputIds(inputsOf(toNodeIds, toInputLabel));
+        if (toNodeInputIds.empty())
+            continue;
+        // Get the merge node and their array input
+        Hyperedges mergeInputUids(inputsOf(outputsOf(endpointsOf(toNodeInputIds, "out", TraversalDirection::INVERSE),"",TraversalDirection::INVERSE), "in"));
+        if (mergeInputUids.empty())
+            continue;
 
-            //  Wire free merge inputs
-            //  However, we have to create indices. Otherwise we could not identify them properly
-            //  That means, that we have to keep track on the current index per mergeId
-            Hyperedges mergeIds(getMergesOfInput(toNodeInputIds));
-            Hyperedges unconnectedInputs;
-            for (const UniqueId& mergeId : mergeIds)
-            {
-                Hyperedges inputsOfMerge(intersect(inputs(), interfacesOf(Hyperedges{mergeId})));
-                for (const UniqueId& mergeInput : inputsOfMerge)
-                {
-                    // Do not connect defaultValue or bias
-                    if (read(mergeInput).label() == "defaultValue")
-                        continue;
-                    if (read(mergeInput).label() == "bias")
-                        continue;
-                    Hyperedges others(endpointsOf(Hyperedges{mergeInput},"",Hypergraph::TraversalDirection::INVERSE));
-                    if (!others.size())
-                    {
-                        unconnectedInputs = unite(unconnectedInputs, Hyperedges{mergeInput});
-                        break;
-                    }
-                }
-                if (unconnectedInputs.size())
-                    break;
-            }
+        // Now we can instantiate and connect
+        Hyperedges uid(instantiateComponent(Hyperedges{Graph::EdgeId}, fromLabel+"_"+fromOutputLabel+"_to_"+toLabel+"_"+toInputLabel));
+        dependsOn(inputsOf(uid,"in"), fromNodeOutputIds);
+        dependsOn(mergeInputUids, outputsOf(uid,"out"));
+        partOfComponent(uid, Hyperedges{modelUid});
 
-            // Now we can instantiate and connect
-            std::cout << "Connecting " << fromLabel << "," << fromOutputLabel << " to " << toLabel << "," << toInputLabel << "\n";
-            Hyperedges uid(instantiateComponent(Hyperedges{Graph::EdgeId}, label));
-            partsOfNet = unite(partsOfNet, uid);
-            std::cout << dependsOn(interfacesOf(uid,"in"), fromNodeOutputIds) << " ";
-            std::cout << dependsOn(unconnectedInputs, interfacesOf(uid,"out")) << "\n";
+        // Update weight value
+        Hyperedges weightValueUids(valuesOf(inputsOf(uid, "weight")));
+        for (const UniqueId weightValueUid : weightValueUids)
+        {
+            access(weightValueUid).updateLabel(weight);
         }
     }
-    // Make all stuff part of the network
-    partOfNetwork(partsOfNet, networkUid);
-    return true;
+
+    return modelUid;
 }
+
+//std::string Graph::floatToStdLogicVector(const float value)
+//{
+//    char buf[20];
+//    unsigned char *ptr = (unsigned char *)&value;
+//    std::snprintf(buf, 20, "x\"%.2x%.2x%.2x%.2x\"", ptr[3], ptr[2], ptr[1], ptr[0]);
+//    return std::string(buf);
+//}
+
+//std::string Graph::floatToC(const float value)
+//{
+//    return std::to_string(value)+"f";
+//}
+
 
 }

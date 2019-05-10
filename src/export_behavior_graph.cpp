@@ -63,13 +63,13 @@ int main (int argc, char **argv)
     // Call domain specific export
     std::size_t pos(fileNameOut.rfind("."));
     std::string name(fileNameOut.substr(0,pos));
-    Hyperedges candidateIds(bg.networkClasses(name));
+    Hyperedges candidateIds(bg.algorithmClasses(name, Hyperedges{Behavior::Graph::SubgraphId}));
     if (!candidateIds.size())
     {
         std::cout << "Could not find " << name << "\n";
         return 3;
     }
-    std::string result(bg.domainSpecificExport(*candidateIds.begin()));
+    std::string result(bg.exportModel(*candidateIds.begin()));
 
     // Store export
     std::ofstream fout;

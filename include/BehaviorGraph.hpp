@@ -1,29 +1,33 @@
 #ifndef _BEHAVIOUR_GRAPH_HPP
 #define _BEHAVIOUR_GRAPH_HPP
 
-#include "SoftwareGraph.hpp"
+#include "SoftwareNetwork.hpp"
 
 namespace Behavior {
 
-class Graph : public Software::Graph
+class Graph : public Software::Network
 {
     public:
+        // The three main entities of the behavior graphs formalism
         static const UniqueId NodeId;
         static const UniqueId MergeId;
         static const UniqueId EdgeId;
-
-        static const UniqueId InterfaceId;
-        static const UniqueId InputId;
-        static const UniqueId OutputId;
-
-        static const UniqueId CId;
-        static const UniqueId VHDLId;
-        static const UniqueId CValueId;
-        static const UniqueId VHDLValueId;
-
         static const UniqueId ExternId;
         static const UniqueId SubgraphId;
 
+        // The interface classes
+        static const UniqueId InterfaceId;
+        static const UniqueId MergeInterfaceId;
+        static const UniqueId InterfaceValueId;
+
+        // Concrete interface classes for different languages
+        // TODO: Move to generator class
+        //static const UniqueId CId;
+        //static const UniqueId VHDLId;
+        //static const UniqueId CValueId;
+        //static const UniqueId VHDLValueId;
+
+        // The following are built-ins
         //static const UniqueId SumId;
         //static const UniqueId ProductId;
         //static const UniqueId MinId;
@@ -33,8 +37,8 @@ class Graph : public Software::Graph
 
         //static const UniqueId Arity1Id;
         //static const UniqueId PipeId;
-        //static const UniqueId InputId;
-        //static const UniqueId OutputId;
+        static const UniqueId InputNodeId;
+        static const UniqueId OutputNodeId;
         //static const UniqueId DivideId;
         //static const UniqueId SineId;
         //static const UniqueId CosineId;
@@ -61,15 +65,8 @@ class Graph : public Software::Graph
         Graph(const Hypergraph& base);
         ~Graph();
 
-        std::string domainSpecificExport(const UniqueId& uid);
-        bool domainSpecificImport(const std::string& serialized);
-
-        Hyperedges getMergesOfInput(const Hyperedges& inputs, const std::string& label="");
-
-        std::string floatToStdLogicVector(const float value);
-        std::string floatToC(const float value);
-
-        Hyperedges createOrFindValueClassesFor(const std::string& value);
+        std::string exportModel(const UniqueId& uid) const;
+        UniqueId importModel(const std::string& serializedModel);
 
     protected:
         void setupMetaModel();

@@ -67,7 +67,7 @@ int main (int argc, char **argv)
 
     // Create domain specific model
     Behavior::Graph bg;
-    bg.domainSpecificImport(ss.str());
+    bg.importModel(ss.str());
 
     // Store modified graph
     std::ofstream fout;
