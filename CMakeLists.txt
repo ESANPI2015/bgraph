@@ -2,69 +2,22 @@ cmake_minimum_required(VERSION 2.8)
 
 project(bgraph)
 
-include_directories(src)
-include_directories(include)
+# Use a .in file to get a correct installation of componentnet library
+configure_file(CMakeLists.componentnet.txt.in ext/componentnet/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/ext/componentnet" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/ext/componentnet" )
+add_subdirectory("${CMAKE_CURRENT_BINARY_DIR}/componentnet-src"
+                 "${CMAKE_CURRENT_BINARY_DIR}/componentnet-build")
 
-SET(ENV{PKG_CONFIG_PATH}
-    ${CMAKE_BINARY_DIR}:$ENV{PKG_CONFIG_PATH}
-    )
-
-if(NOT TARGET hypergraph)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../hypergraph hypergraph)
-endif(NOT TARGET hypergraph)
-if(NOT TARGET componentnet)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../componentnet componentnet)
-endif(NOT TARGET componentnet)
-if(NOT TARGET yaml-cpp)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../ext/yaml-cpp yaml-cpp)
-endif(NOT TARGET yaml-cpp)
-
-find_package(PkgConfig)
-pkg_check_modules(bgraph_PKGCONFIG REQUIRED
-    hypergraph componentnet yaml-cpp
-    )
-
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
 set(CMAKE_CXX_STANDARD 11)
-include_directories(${bgraph_PKGCONFIG_INCLUDE_DIRS})
-#message(${bgraph_PKGCONFIG_INCLUDE_DIRS})
-link_directories(${bgraph_PKGCONFIG_LIBRARY_DIRS})
-add_definitions(${bgraph_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
-
-set(SOURCES
-    src/BehaviorGraph.cpp
-    )
-set(HEADERS
-    include/BehaviorGraph.hpp
-    )
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-add_library(bgraph STATIC ${SOURCES})
-target_link_libraries(bgraph
-    ${bgraph_PKGCONFIG_STATIC_LIBRARIES}
-    )
-
-add_executable(bg-import-model src/import_behavior_graph.cpp)
-target_link_libraries(bg-import-model bgraph)
-install(TARGETS bg-import-model
-RUNTIME DESTINATION bin)
-
-add_executable(bg-export-model src/export_behavior_graph.cpp)
-target_link_libraries(bg-export-model bgraph)
-install(TARGETS bg-export-model
-RUNTIME DESTINATION bin)
-
-#add_executable(gen_cpp_class src/gen_cpp_class.cpp)
-#target_link_libraries(gen_cpp_class bgraph)
-#install(TARGETS gen_cpp_class
-#RUNTIME DESTINATION bin)
-#
-#add_executable(gen_vhdl_entity src/gen_vhdl_entity.cpp)
-#target_link_libraries(gen_vhdl_entity bgraph)
-#install(TARGETS gen_vhdl_entity
-#RUNTIME DESTINATION bin)
+include_directories(include)
+add_subdirectory(src)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
+#add_subdirectory(tools)
+#enable_testing()
+#add_subdirectory(test)
 
 # pkg-config, to be installed:
 configure_file(${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
